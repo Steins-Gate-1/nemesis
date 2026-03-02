@@ -6,6 +6,7 @@ import { z } from "zod";
 import { analyzeDomain } from "./osint/pipeline";
 import { simulateAttacks } from "./osint/attack-simulator";
 import { generatePlaybook } from "./osint/playbook-generator";
+import { deployHoneytoken, processWebhookTrigger, runCorrelation, generateHoneyPersona, getDeceptionStats } from "./deception/engine";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -134,25 +135,124 @@ export async function registerRoutes(
     res.json(assets);
   });
 
-  app.post(api.deception.create.path, async (req, res) => {
+  app.post(api.deception.deploy.path, async (req, res) => {
     try {
-      const input = api.deception.create.input.parse(req.body);
-      const asset = await storage.createDeceptionAsset(input);
-      
-      await storage.createAuditLog({
-        action: "Create Deception Asset",
-        details: `Type: ${asset.assetType}, URL: ${asset.url}`
-      });
-
+      const input = api.deception.deploy.input.parse(req.body);
+      const asset = await deployHoneytoken(input.tokenType, input.placementLocation);
       res.status(201).json(asset);
     } catch (err) {
       if (err instanceof z.ZodError) {
-        return res.status(400).json({
-          message: err.errors[0].message,
-          field: err.errors[0].path.join('.'),
-        });
+        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
+      }
+      if (err instanceof Error) {
+        return res.status(400).json({ message: err.message });
       }
       throw err;
+    }
+  });
+
+  app.delete('/api/deception/:id', async (req, res) => {
+    try {
+      await storage.deleteDeceptionAsset(Number(req.params.id));
+      await storage.createAuditLog({
+        action: "Deception Asset Decommissioned",
+        user: "OPERATOR",
+        details: `Asset ID ${req.params.id} removed from grid`,
+      });
+      res.json({ success: true });
+    } catch (err) {
+      res.status(404).json({ message: "Asset not found" });
+    }
+  });
+
+  app.post(api.deception.simulateTrigger.path, async (req, res) => {
+    try {
+      const input = api.deception.simulateTrigger.input.parse(req.body);
+      const result = await processWebhookTrigger({
+        tokenId: input.tokenId,
+        sourceIp: input.sourceIp || `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+        userAgent: "Mozilla/5.0 (Recon Scanner)",
+        geoLocation: "Unknown — Simulated Trigger",
+      });
+      res.json(result);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
+      }
+      if (err instanceof Error) {
+        return res.status(400).json({ message: err.message });
+      }
+      throw err;
+    }
+  });
+
+  app.post('/webhook/canary', async (req, res) => {
+    try {
+      const tokenId = req.body?.token_id || req.body?.tokenId;
+      if (!tokenId) {
+        return res.status(400).json({ message: "Missing token_id" });
+      }
+      const sourceIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || "unknown";
+      const userAgent = req.headers['user-agent'] || "unknown";
+
+      await processWebhookTrigger({
+        tokenId,
+        sourceIp,
+        userAgent,
+        geoLocation: req.body?.geo || "Unknown",
+      });
+
+      res.json({ status: "received" });
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error("[Webhook] Canary error:", err.message);
+        return res.status(400).json({ message: err.message });
+      }
+      res.status(500).json({ message: "Internal error" });
+    }
+  });
+
+  app.get(api.deception.correlation.path, async (req, res) => {
+    const result = await runCorrelation();
+    res.json(result);
+  });
+
+  app.get(api.deception.stats.path, async (req, res) => {
+    const assets = await storage.getDeceptionAssets();
+    const personas = await storage.getHoneyPersonas();
+    res.json(getDeceptionStats(assets, personas));
+  });
+
+  app.get(api.deception.personas.list.path, async (req, res) => {
+    const personas = await storage.getHoneyPersonas();
+    res.json(personas);
+  });
+
+  app.post(api.deception.personas.create.path, async (req, res) => {
+    try {
+      const input = api.deception.personas.create.input.parse(req.body);
+      const persona = await generateHoneyPersona(input.deploymentContext);
+      res.status(201).json(persona);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
+      }
+      throw err;
+    }
+  });
+
+  app.patch('/api/deception/personas/:id/retire', async (req, res) => {
+    try {
+      const persona = await storage.retireHoneyPersona(Number(req.params.id));
+      if (!persona) return res.status(404).json({ message: "Persona not found" });
+      await storage.createAuditLog({
+        action: "Honey Persona Retired",
+        user: "OPERATOR",
+        details: `Persona "${persona.name}" retired`,
+      });
+      res.json(persona);
+    } catch (err) {
+      res.status(500).json({ message: "Internal error" });
     }
   });
 
@@ -226,15 +326,28 @@ async function seedDatabase() {
     
     // Deception Assets
     await storage.createDeceptionAsset({
-      assetType: "Canarytoken - MS Word Document",
-      url: "http://canarytokens.com/fake-doc-1",
-      triggered: false
+      tokenId: "NEM-SEED001",
+      assetType: "ms_word",
+      placementLocation: "Internal Shared Drive",
+      status: "ACTIVE",
+      url: "NEMESIS_Intel_Report_Seed.docx",
+      triggered: false,
+      severityLevel: "HIGH",
+      triggerCount: 0,
     });
     await storage.createDeceptionAsset({
-      assetType: "AWS API Key",
-      url: "AKIAIOSFODNN7EXAMPLE",
+      tokenId: "NEM-SEED002",
+      assetType: "aws_key",
+      placementLocation: "Cloud Config File (S3/GCS)",
+      status: "TRIGGERED",
+      url: "AKIA1234567890EXAMPLE",
       triggered: true,
-      lastTriggeredAt: new Date()
+      lastTriggeredAt: new Date(),
+      sourceIp: "198.51.100.42",
+      geoLocation: "Eastern Europe",
+      userAgent: "Python-urllib/3.9",
+      severityLevel: "CRITICAL",
+      triggerCount: 3,
     });
 
     // Deepfake scans

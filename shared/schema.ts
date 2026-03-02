@@ -68,10 +68,29 @@ export const attack_scenarios = pgTable("attack_scenarios", {
 
 export const deception_assets = pgTable("deception_assets", {
   id: serial("id").primaryKey(),
-  assetType: text("asset_type").notNull(), // e.g. "Canarytoken"
+  tokenId: text("token_id"),
+  assetType: text("asset_type").notNull(),
+  placementLocation: text("placement_location"),
+  status: text("status").default("ACTIVE"),
   url: text("url").notNull(),
   triggered: boolean("triggered").default(false),
   lastTriggeredAt: timestamp("last_triggered_at"),
+  sourceIp: text("source_ip"),
+  geoLocation: text("geo_location"),
+  userAgent: text("user_agent"),
+  severityLevel: text("severity_level").default("HIGH"),
+  triggerCount: integer("trigger_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const honey_personas = pgTable("honey_personas", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  role: text("role").notNull(),
+  decoyEmail: text("decoy_email").notNull(),
+  department: text("department"),
+  deploymentContext: text("deployment_context"),
+  status: text("status").default("ACTIVE"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -120,6 +139,7 @@ export const insertInfraExposureSchema = createInsertSchema(infrastructure_expos
 export const insertGithubExposureSchema = createInsertSchema(github_exposure).omit({ id: true, createdAt: true });
 export const insertAttackScenarioSchema = createInsertSchema(attack_scenarios).omit({ id: true, createdAt: true });
 export const insertDeceptionAssetSchema = createInsertSchema(deception_assets).omit({ id: true, createdAt: true });
+export const insertHoneyPersonaSchema = createInsertSchema(honey_personas).omit({ id: true, createdAt: true });
 export const insertDeepfakeScanSchema = createInsertSchema(deepfake_scans).omit({ id: true, createdAt: true });
 export const insertAlertSchema = createInsertSchema(alerts).omit({ id: true, createdAt: true });
 export const insertRiskScoreSchema = createInsertSchema(risk_scores).omit({ id: true, createdAt: true });
@@ -133,6 +153,7 @@ export type InfraExposure = typeof infrastructure_exposure.$inferSelect;
 export type GithubExposure = typeof github_exposure.$inferSelect;
 export type AttackScenario = typeof attack_scenarios.$inferSelect;
 export type DeceptionAsset = typeof deception_assets.$inferSelect;
+export type HoneyPersona = typeof honey_personas.$inferSelect;
 export type DeepfakeScan = typeof deepfake_scans.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
 export type RiskScore = typeof risk_scores.$inferSelect;

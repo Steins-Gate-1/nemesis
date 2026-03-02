@@ -1,0 +1,279 @@
+PROMPT 6 — CYBER COMMAND CENTER DASHBOARD & UI ARCHITECTURE
+
+Paste this as a standalone prompt into your AI website generator.
+
+🛡️ PROMPT: Design the NEMESIS Cyber Command Center Interface
+
+Act as an elite UI/UX architect specializing in defense-grade cybersecurity dashboards used by intelligence agencies and special forces cyber units.
+
+Design the command interface for a military-level cyber defense platform called:
+
+NEMESIS — National Enterprise Monitoring & Early Security Intelligence System
+
+This is NOT a startup SaaS dashboard.
+It must feel classified, tactical, and mission-critical.
+
+No generic templates.
+No pastel SaaS design.
+No rounded bubbly UI.
+
+Design a cinematic, high-assurance, cyber warfare command center.
+
+🎯 DESIGN OBJECTIVE
+
+Create a real-time operational cyber defense interface that:
+
+• Displays live intelligence data
+• Shows attack simulations
+• Highlights active targeting alerts
+• Displays deception triggers
+• Monitors deepfake threats
+• Provides mitigation playbooks
+• Logs forensic activity
+
+All components must map to real backend modules from previous prompts.
+
+🎨 VISUAL IDENTITY
+
+Theme:
+
+• Matte black (#0A0F1A)
+• Deep navy gradients
+• Subtle grid overlays
+• Neon red for critical alerts
+• Electric cyan for active intelligence
+• Soft amber for warnings
+• Minimal white text
+
+Style inspiration:
+
+• Military tactical interface
+• Threat intelligence war room
+• SOC command center
+• Satellite control console
+
+🖥️ LAYOUT STRUCTURE
+
+Design a 3-zone interface:
+
+ZONE 1 — GLOBAL THREAT OVERVIEW (Top Panel)
+
+Display:
+
+• Overall Risk Score (large dynamic meter)
+• Risk Level Indicator (LOW / MODERATE / HIGH / CRITICAL)
+• Active Alerts Counter
+• Active Targeting Status
+• Deepfake Threat Indicator
+
+Visual elements:
+
+• Circular animated risk meter
+• Pulsing red alert icon
+• Radar sweep animation background
+
+Must update dynamically.
+
+ZONE 2 — INTELLIGENCE PANELS (Main Body)
+
+Split into 4 primary panels:
+
+PANEL A — Exposure Intelligence
+
+Display:
+
+• Breach count
+• Open ports
+• GitHub exposures
+• Infrastructure vulnerabilities
+• Domain age
+
+Each displayed as tactical cards.
+
+Each card includes:
+
+• Severity badge
+• Numeric score
+• “View Details” expandable section
+
+PANEL B — Attack Simulation
+
+Display:
+
+• Highest risk scenario
+• Step-by-step attacker pathway
+• Likelihood score
+• Impact score
+• Risk classification
+
+Include:
+
+• Expandable tactical breakdown
+• Mitigation checklist toggle
+• Structured scenario timeline
+
+PANEL C — Deception & Counter-Intelligence
+
+Display:
+
+• Active honeytokens
+• Triggered tokens
+• Trigger source IP
+• Geo-location map
+• Active targeting banner
+
+If token triggered:
+
+Background glows red subtly
+Alert animation triggers
+
+PANEL D — Deepfake Warfare Defense
+
+Display:
+
+• Exposure score meter
+• Upload media interface
+• Synthetic probability score
+• Scan history log
+
+Include waveform animation while scanning.
+
+🗂️ ZONE 3 — INTELLIGENCE TIMELINE (Bottom Panel)
+
+Display chronological feed:
+
+• Breach detected
+• Port exposed
+• Honeytoken triggered
+• Deepfake detected
+• Risk escalated
+
+Each entry shows:
+
+• Timestamp
+• Severity color
+• Expandable forensic detail
+
+📊 DATA VISUALIZATION REQUIREMENTS
+
+Include:
+
+• Dynamic risk meter
+• Bar charts for exposure categories
+• Line graph for risk over time
+• Map visualization for IP triggers
+• Animated alert pulse
+
+All visuals must pull real backend data.
+
+No placeholder graphs.
+
+🔐 USER ACCESS MODEL
+
+Support:
+
+• Admin
+• Analyst
+• Observer
+
+Role-based UI restrictions.
+
+Example:
+
+Observer cannot deploy honeytokens.
+
+⚡ INTERACTION REQUIREMENTS
+
+Every module must:
+
+• Pull data from backend endpoints
+• Display loading states
+• Show error messages
+• Allow refresh
+• Auto-update on alert
+
+Include:
+
+• Real-time WebSocket updates for alerts
+OR
+• Polling every 30 seconds
+
+🧾 DETAIL VIEW MODALS
+
+Each major module must allow:
+
+“View Full Intelligence Report”
+
+Which displays:
+
+• Raw API responses
+• Processed summary
+• Risk reasoning
+• Mitigation recommendations
+• Forensic logs
+
+🛡️ ALERT VISUAL SYSTEM
+
+Define alert color codes:
+
+Green → Stable
+Amber → Warning
+Red → High Threat
+Flashing Red → Active Targeting
+
+Critical alerts must:
+
+• Trigger animation
+• Pin to top
+• Require acknowledgment
+
+🎛️ NAVIGATION STRUCTURE
+
+Sidebar navigation:
+
+• Dashboard
+• Domain Analysis
+• Deception Management
+• Deepfake Defense
+• Alerts
+• Audit Logs
+• System Settings
+
+Collapsed minimal sidebar style.
+
+📱 RESPONSIVENESS
+
+• Desktop-first
+• Large widescreen optimized
+• Tablet functional
+• Mobile read-only mode
+
+🧠 TECHNICAL REQUIREMENTS
+
+Frontend must:
+
+• Use secure API calls
+• Use environment-based config
+• Avoid exposing keys
+• Sanitize input
+• Protect against XSS
+
+Use modern framework:
+
+Next.js / React / Vite
+
+🧾 OUTPUT REQUIREMENTS
+
+Generate:
+
+• UI wireframe diagram
+• Component tree
+• State management logic
+• API mapping per component
+• Color palette specification
+• Animation guidelines
+• User role permissions matrix
+
+Everything must be realistic and implementable.
+
+No generic dashboard mockups.

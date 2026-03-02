@@ -1,0 +1,284 @@
+PROMPT 7 — ALERTING, AUDIT LOGGING & MILITARY-GRADE REPORTING SYSTEM
+
+Paste this as a standalone prompt into your AI website generator.
+
+🛡️ PROMPT: Design the Alerting, Audit Logging & Tactical Reporting System for NEMESIS
+
+Act as a senior cybersecurity compliance architect designing the operational integrity layer for a national-level cyber defense system called:
+
+NEMESIS — National Enterprise Monitoring & Early Security Intelligence System
+
+This module must ensure:
+
+• All intelligence events are logged
+• All alerts are traceable
+• All risk escalations are explainable
+• Reports are exportable
+• Forensic evidence is preserved
+• System actions are auditable
+
+No vague descriptions.
+Everything must be structured and production-ready.
+
+🎯 OBJECTIVE
+
+Build an alerting and audit system that:
+
+• Detects high-risk events
+• Escalates critical incidents
+• Maintains immutable audit logs
+• Generates executive and tactical reports
+• Supports compliance review
+
+This module must integrate with:
+
+• OSINT engine
+• Attack simulation engine
+• Deception engine
+• Deepfake defense module
+
+🚨 MODULE 1 — ALERT GENERATION ENGINE
+
+Define deterministic alert triggers:
+
+IF breach_count > 3
+→ Create HIGH alert
+
+IF critical CVE detected
+→ Create HIGH alert
+
+IF honeytoken triggered
+→ Create CRITICAL alert
+
+IF deepfake probability > 85%
+→ Create CRITICAL alert
+
+IF risk_score crosses threshold
+→ Escalate severity
+
+ALERT STRUCTURE
+
+Store in alerts table:
+
+• id (UUID)
+• alert_type
+• domain
+• severity_level
+• source_module
+• related_object_id
+• description
+• recommended_action
+• status (OPEN / ACKNOWLEDGED / RESOLVED)
+• created_at
+• updated_at
+
+ALERT ESCALATION LOGIC
+
+If:
+
+Multiple alerts within 10 minutes
+→ Escalate severity level
+
+If:
+
+Active targeting + high exposure
+→ Immediate CRITICAL alert
+
+Include automated severity recalculation.
+
+🗃️ MODULE 2 — IMMUTABLE AUDIT LOGGING
+
+Every action must generate log entry.
+
+Examples:
+
+• Domain analyzed
+• API called
+• Risk recalculated
+• Honeytoken deployed
+• Honeytoken triggered
+• Deepfake scan performed
+• Alert acknowledged
+
+AUDIT LOG TABLE
+
+audit_logs:
+
+• id
+• actor_type (SYSTEM / ADMIN / ANALYST)
+• action_type
+• target_entity
+• reference_id
+• raw_event_data (JSON)
+• timestamp
+• hash_signature
+
+Each log must include hash signature for tamper detection.
+
+IMMUTABILITY REQUIREMENTS
+
+• Logs cannot be edited
+• Only append allowed
+• Admin cannot delete logs
+• Log export must preserve integrity
+
+Optional:
+
+Add simple hash chaining:
+
+Each new log includes hash of previous log entry.
+
+📊 MODULE 3 — INCIDENT REPORT GENERATOR
+
+Generate structured incident reports:
+
+Types:
+
+• Exposure Report
+• Active Targeting Report
+• Deepfake Incident Report
+• Executive Threat Summary
+
+REPORT STRUCTURE
+
+Executive Summary:
+
+• Domain
+• Overall Risk Level
+• Key Findings
+• Recommended Actions
+
+Technical Details:
+
+• API findings
+• Attack scenarios
+• Mitigation checklist
+• Forensic evidence
+• Timeline
+
+EXPORT OPTIONS
+
+• PDF
+• JSON
+• Secure HTML report
+
+Reports must:
+
+• Include timestamp
+• Include report ID
+• Include digital signature
+• Include severity banner
+
+📈 MODULE 4 — RISK EVOLUTION TRACKING
+
+Track risk over time.
+
+Store historical risk scores.
+
+Generate:
+
+• Line graph of risk progression
+• Incident timeline
+• Alert frequency chart
+
+Use data from:
+
+risk_scores table
+
+Fields:
+
+• domain
+• risk_score
+• severity_level
+• calculated_at
+
+🔔 MODULE 5 — NOTIFICATION SYSTEM
+
+Support:
+
+• Email alerts
+• Dashboard popups
+• Webhook forwarding
+
+For CRITICAL alerts:
+
+• Immediate notification
+• Highlight in dashboard
+• Require manual acknowledgment
+
+🧠 MODULE 6 — INCIDENT LIFECYCLE MANAGEMENT
+
+Alert lifecycle:
+
+OPEN
+→ UNDER REVIEW
+→ MITIGATION IN PROGRESS
+→ RESOLVED
+
+Each stage change logged.
+
+Require:
+
+• Comment field
+• Analyst note
+• Resolution summary
+
+🔐 SECURITY & COMPLIANCE REQUIREMENTS
+
+The system must:
+
+• Log all admin actions
+• Prevent silent deletion of alerts
+• Require authentication for acknowledgment
+• Track user identity
+• Maintain access control
+
+Comply with:
+
+• Defensive intelligence principles
+• Ethical monitoring standards
+
+⚡ PERFORMANCE REQUIREMENTS
+
+• Alert generation < 1 second
+• Logging asynchronous
+• No performance bottlenecks
+
+📊 DASHBOARD INTEGRATION
+
+Add:
+
+Alert Center Panel
+
+Display:
+
+• Total active alerts
+• Critical alerts flashing
+• Alert trend graph
+• Filter by severity
+• Filter by module
+
+Add:
+
+Audit Explorer view:
+
+• Search by domain
+• Filter by event type
+• View raw JSON
+
+🧾 OUTPUT REQUIREMENTS
+
+Generate:
+
+• Alert trigger mapping table
+• Database schema
+• Incident lifecycle diagram
+• Audit log structure
+• Hash chaining explanation
+• Sample alert JSON
+• Sample audit log JSON
+• Sample executive report layout
+
+Everything must be realistic and deployable.
+
+No conceptual placeholders.

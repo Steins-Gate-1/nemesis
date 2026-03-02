@@ -1,0 +1,271 @@
+PROMPT 8 — DEPLOYMENT, SECURITY HARDENING & PRODUCTION ARCHITECTURE
+
+Paste this as a standalone prompt into your AI website generator.
+
+🛡️ PROMPT: Design the Deployment, Security Hardening & Production Architecture for NEMESIS
+
+Act as a senior DevSecOps architect designing the secure production deployment model for a national-level cyber defense system called:
+
+NEMESIS — National Enterprise Monitoring & Early Security Intelligence System
+
+This module must ensure:
+
+• Secure cloud deployment
+• Zero-trust access control
+• Hardened infrastructure
+• Secure API management
+• Environment separation
+• Resilience & scalability
+
+This is not a student demo deployment.
+
+Design it like a defense-grade system.
+
+No vague “deploy on cloud” statements.
+Everything must be structured and realistic.
+
+🎯 OBJECTIVE
+
+Design a production-ready deployment model that:
+
+• Protects sensitive intelligence data
+• Secures API keys and integrations
+• Prevents unauthorized access
+• Supports multi-agency environments
+• Handles high-risk threat intelligence
+
+🏗️ DEPLOYMENT ARCHITECTURE
+
+Design a layered architecture:
+
+LAYER 1 — FRONTEND
+
+Deploy using:
+
+• Vercel
+OR
+• Cloudflare Pages
+OR
+• AWS Amplify
+
+Requirements:
+
+• HTTPS enforced
+• Content Security Policy enabled
+• No API keys exposed
+• Strict CORS configuration
+
+LAYER 2 — BACKEND (Serverless)
+
+Deploy backend via:
+
+• Supabase Edge Functions
+OR
+• Vercel Serverless Functions
+OR
+• AWS Lambda
+
+Requirements:
+
+• All external API calls server-side
+• Rate limiting per IP
+• Input validation
+• Centralized error logging
+• Timeout controls
+
+LAYER 3 — DATABASE
+
+Use:
+
+• Supabase PostgreSQL
+OR
+• Managed PostgreSQL
+
+Security requirements:
+
+• Row-level security (RLS)
+• Encrypted at rest
+• Encrypted in transit
+• Backup schedule enabled
+• Daily snapshot retention
+
+🔐 AUTHENTICATION & ACCESS CONTROL
+
+Implement:
+
+• Multi-factor authentication (MFA)
+• Role-based access control
+• JWT-based session tokens
+• Token expiration
+• Refresh token rotation
+
+Roles:
+
+• Administrator
+• Cyber Analyst
+• Observer
+
+Enforce least privilege access.
+
+🛡️ API KEY MANAGEMENT
+
+All API keys must:
+
+• Be stored in environment variables
+• Never exposed in frontend
+• Rotated periodically
+• Logged if accessed
+
+Use:
+
+.env management
+Secrets vault (if available)
+
+🔍 ZERO TRUST MODEL
+
+Design system so that:
+
+• No internal module trusts another implicitly
+• Every request validated
+• Every webhook verified
+• Every alert authenticated
+
+🚨 RATE LIMITING & ABUSE PROTECTION
+
+Implement:
+
+• IP-based rate limiting
+• CAPTCHA for public forms
+• Input sanitization
+• API request throttling
+
+Protect against:
+
+• API abuse
+• Brute force
+• Injection attacks
+• Replay attacks
+
+🧾 DATA PROTECTION
+
+Classify stored data:
+
+• Public OSINT
+• Internal analysis
+• Alert metadata
+• Forensic logs
+
+Ensure:
+
+• Sensitive data masked in UI
+• Raw responses stored securely
+• Audit logs immutable
+
+🔄 BACKUP & DISASTER RECOVERY
+
+Define:
+
+• Daily automated backups
+• Recovery time objective (RTO)
+• Recovery point objective (RPO)
+• Fallback serverless region
+
+Document recovery process.
+
+📊 MONITORING & OBSERVABILITY
+
+Implement:
+
+• Application logs
+• Error logs
+• Alert metrics
+• Performance monitoring
+• API health checks
+
+Dashboard must include:
+
+System Health Panel
+
+Display:
+
+• API uptime
+• Database status
+• Last backup time
+• Active integrations
+
+⚡ SCALABILITY DESIGN
+
+Ensure system can:
+
+• Handle concurrent domain analyses
+• Scale horizontally
+• Process multiple alerts
+• Support multiple agencies
+
+Design stateless backend.
+
+🛡️ SECURITY HARDENING CHECKLIST
+
+Implement:
+
+• Strict CORS
+• Helmet security headers
+• Input validation middleware
+• JSON schema validation
+• Webhook signature validation
+• File upload size limits
+• Automatic file deletion after deepfake scan
+
+🔎 PENETRATION TESTING PREPARATION
+
+Prepare system for:
+
+• Input fuzzing
+• API endpoint testing
+• Authentication bypass attempts
+• Role privilege escalation tests
+
+Log all failed attempts.
+
+🧠 COMPLIANCE PREPARATION
+
+Design documentation for:
+
+• Defensive cyber intelligence use
+• Ethical data collection
+• Legal OSINT compliance
+• Data retention policy
+
+Include:
+
+Compliance statement section.
+
+📦 DEPLOYMENT FLOW
+
+Define CI/CD pipeline:
+
+Code commit
+→ Build
+→ Lint
+→ Security check
+→ Deploy
+→ Health check
+
+Rollback strategy included.
+
+🧾 OUTPUT REQUIREMENTS
+
+Generate:
+
+• Deployment architecture diagram
+• Access control model
+• Security hardening checklist
+• Backup strategy
+• Rate limiting logic
+• Environment separation plan
+• Monitoring plan
+• CI/CD workflow
+
+Everything must be realistic and deployable.
+
+No conceptual fluff.

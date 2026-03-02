@@ -1,0 +1,248 @@
+PROMPT 5 — DEEPFAKE WARFARE DEFENSE UNIT
+
+Paste this as a standalone prompt into your AI website generator.
+
+🛡️ PROMPT: Build the Deepfake Warfare Defense Unit for NEMESIS
+
+Act as a senior AI security researcher and digital forensics engineer designing the Deepfake Warfare Defense Unit for a national-level cyber defense system called NEMESIS.
+
+This module must protect organizations and high-value individuals from AI-based impersonation attacks including synthetic video, synthetic voice, and manipulated images.
+
+No theoretical discussion.
+No vague AI detection claims.
+Only implementable, API-driven, production-ready design.
+
+🎯 OBJECTIVE
+
+Design a Deepfake Defense module that:
+
+• Calculates Deepfake Exposure Risk
+• Detects synthetic media (video, audio, image)
+• Produces confidence scores
+• Logs detection events
+• Integrates with risk engine
+• Generates mitigation guidance
+
+The system must use hosted detection APIs or deployable detection services — not local heavy ML training.
+
+🧠 MODULE 1 — DEEPFAKE EXPOSURE SCORING
+
+Purpose:
+
+Assess how vulnerable a person or organization is to impersonation.
+
+INPUT
+
+• Public video links
+• Public interviews
+• Public speaking duration
+• Public image presence
+
+EXPOSURE METRICS
+
+Calculate:
+
+1️⃣ Total public video duration
+2️⃣ Audio clarity rating
+3️⃣ Face visibility frequency
+4️⃣ Image resolution availability
+5️⃣ Number of publicly accessible interviews
+
+EXPOSURE SCORE FORMULA
+
+Example deterministic model:
+
+Exposure Score =
+
+(video_minutes × 0.4) +
+(audio_quality × 0.2) +
+(face_visibility × 0.2) +
+(image_availability × 0.2)
+
+Normalize to 0–100.
+
+Classify:
+
+0–30 → LOW
+31–60 → MODERATE
+61–80 → HIGH
+81–100 → CRITICAL
+
+DATABASE TABLE
+
+deepfake_exposure_profiles:
+
+• id
+• subject_name
+• video_minutes
+• audio_score
+• face_visibility_score
+• exposure_score
+• exposure_level
+• created_at
+
+🎥 MODULE 2 — VIDEO DEEPFAKE DETECTION
+
+Integrate with hosted deepfake detection APIs such as:
+
+• Hive AI
+• Sensity AI
+• Deepware API
+• Sightengine
+
+The system must:
+
+• Accept uploaded video file
+• Send to detection API
+• Receive:
+
+Synthetic probability
+
+Confidence score
+
+Explanation tags
+
+RESPONSE FORMAT
+
+{
+"media_type": "video",
+"synthetic_probability": 0.91,
+"confidence": 0.88,
+"analysis_summary": "",
+"risk_level": ""
+}
+
+🎙️ MODULE 3 — AUDIO DEEPFAKE DETECTION
+
+Accept .wav or .mp3 file.
+
+Send to detection API.
+
+Receive:
+
+• Real vs Synthetic probability
+• Spectral anomaly score
+• Voice clone likelihood
+
+Store in:
+
+deepfake_scans table:
+
+• id
+• subject
+• media_type
+• synthetic_probability
+• confidence_score
+• risk_level
+• timestamp
+
+🖼️ MODULE 4 — IMAGE MANIPULATION DETECTION
+
+For uploaded image:
+
+• Detect GAN artifacts
+• Detect facial inconsistencies
+• Detect blending artifacts
+
+Use detection API.
+
+Classify:
+
+LOW manipulation risk
+MODERATE
+HIGH
+CRITICAL
+
+🔄 MODULE 5 — RISK ENGINE INTEGRATION
+
+If:
+
+synthetic_probability > 0.85
+→ Create CRITICAL alert
+
+If:
+
+exposure_score HIGH + synthetic detected
+→ escalate to highest priority
+
+Update overall risk score.
+
+🧾 MODULE 6 — MITIGATION GENERATOR
+
+When high risk detected:
+
+Generate mitigation guidance:
+
+• Public media watermarking
+• Limit public audio exposure
+• Deploy voice authentication
+• Use video verification protocols
+• Educate staff on impersonation risk
+
+Use AI to generate structured mitigation list.
+
+🚨 MODULE 7 — ALERTING
+
+If deepfake detection HIGH:
+
+• Create alert in alerts table
+• Push dashboard notification
+• Log forensic record
+
+Alert JSON:
+
+{
+"type": "DEEPFAKE_DETECTED",
+"subject": "",
+"probability": "",
+"risk_level": "",
+"recommended_action": ""
+}
+
+🔐 SECURITY REQUIREMENTS
+
+• Uploaded files processed server-side only
+• Temporary file storage auto-deleted
+• No file stored permanently unless flagged
+• No third-party API exposure of confidential data
+• API keys stored securely
+
+📊 DASHBOARD REQUIREMENTS
+
+Add Deepfake Warfare Panel:
+
+• Exposure Score meter
+• Media upload interface
+• Detection result card
+• Historical scan timeline
+• Alert indicator
+
+Visual theme:
+
+Red waveform animations
+Face-grid scanning overlay
+Radar pulse effect
+
+Military-grade UI style.
+
+⚡ PERFORMANCE REQUIREMENTS
+
+• Detection API response < 10 seconds
+• Async processing
+• User notified when scan complete
+
+🧠 OUTPUT REQUIREMENTS
+
+Generate:
+
+• Exposure scoring logic
+• API integration mapping
+• Detection pipeline diagram
+• Database schema
+• Alert workflow
+• Risk escalation logic
+• Example JSON responses
+
+Everything must be implementable.
+
+No conceptual fluff.

@@ -1,0 +1,249 @@
+Role:
+Act as a senior cybersecurity automation architect and autonomous workflow engineer.
+
+Objective:
+Build a fully automated cyber defense orchestration system called “NEMESIS” that integrates OSINT collection, dark web threat monitoring, deception deployment, attack simulation, and deepfake risk analysis using structured workflows, API connectors, and intelligent decision pipelines.
+
+🧠 SYSTEM OVERVIEW
+
+Design NEMESIS as an AI-driven cybersecurity automation platform that performs the following functions:
+
+Automated OSINT data collection
+
+Threat intelligence aggregation
+
+Exposure graph modeling
+
+Attack path simulation
+
+Risk scoring
+
+Deception asset deployment
+
+Honeytoken alert monitoring
+
+Deepfake exposure scoring
+
+Alert orchestration
+
+Report generation
+
+The system must function as an autonomous orchestration engine using API integrations and scheduled triggers.
+
+🔹 MODULE 1 — OSINT COLLECTION WORKFLOW
+
+Create automated workflows that:
+
+• Accept user input (domain, organization name, or email)
+• Call external APIs:
+
+HaveIBeenPwned API
+
+Shodan API
+
+GitHub Search API
+
+WHOIS API
+• Normalize returned JSON
+• Extract:
+
+Breach names
+
+Data types exposed
+
+Open ports
+
+CVEs
+
+Exposed repositories
+
+DNS records
+• Store structured data in persistent storage (Google Sheets, Firebase, or database)
+
+Trigger this workflow:
+
+On demand
+
+Or scheduled every 6 hours
+
+🔹 MODULE 2 — DARK WEB SIGNAL AGGREGATION
+
+Build automated threat ingestion pipelines that:
+
+• Poll threat intelligence APIs
+• Filter mentions based on:
+
+Domain
+
+Employee names
+
+Email patterns
+• Correlate results with stored exposure data
+• Assign severity tags:
+
+Low
+
+Medium
+
+High
+
+Critical
+
+If severity ≥ High:
+→ Trigger alert workflow
+
+🔹 MODULE 3 — ATTACK PATH SIMULATION
+
+Using collected OSINT data:
+
+• Generate structured exposure summary
+• Pass summary to AI reasoning module
+• Instruct AI to:
+
+Identify likely attack vectors
+
+Predict attack chain steps
+
+Estimate likelihood score
+
+Estimate impact score
+
+Recommend mitigation
+
+Return structured output JSON:
+{
+"scenario": "",
+"likelihood": "",
+"impact": "",
+"mitigation": []
+}
+
+Store and log results.
+
+🔹 MODULE 4 — DECEPTION ENGINE AUTOMATION
+
+Create automated workflows that:
+
+• Generate honey persona profiles (fake employee data)
+• Generate decoy credentials (inert tokens)
+• Deploy decoys to controlled endpoints
+• Monitor webhook triggers
+• If honeytoken triggered:
+→ Flag Active Targeting
+→ Escalate severity
+→ Notify via email + Slack
+
+Maintain a deception registry table.
+
+🔹 MODULE 5 — DEEPFAKE RISK SCORING
+
+Create workflow that:
+
+• Accepts user-provided public links
+• Count number of public videos
+• Estimate:
+
+Audio exposure duration
+
+Face visibility
+
+Resolution availability
+• Compute synthetic impersonation risk score (0–100)
+
+If user uploads suspicious media:
+• Send file to external deepfake detection API endpoint
+• Return:
+
+Synthetic probability
+
+Confidence score
+
+Explanation
+
+🔹 MODULE 6 — ALERT ORCHESTRATION
+
+Build rule engine:
+
+IF:
+
+New breach detected
+
+Honeytoken triggered
+
+High-risk attack path predicted
+
+Deepfake probability > 85%
+
+THEN:
+
+Send email alert
+
+Send Slack notification
+
+Generate PDF incident summary
+
+Log in audit trail
+
+🔹 MODULE 7 — REPORT GENERATION
+
+Automatically generate:
+
+• Executive summary report
+• Risk score dashboard
+• Attack simulation breakdown
+• Mitigation checklist
+• Evidence logs
+
+Export:
+
+PDF
+
+JSON
+
+HTML report
+
+🔹 SYSTEM REQUIREMENTS
+
+• Modular architecture
+• Webhook endpoints
+• Secure environment variable handling
+• API key vault storage
+• Retry mechanisms
+• Logging & audit trail
+• Error handling
+• Rate limit protection
+• Scalable design
+
+🔹 OUTPUT FORMAT
+
+Design the automation as:
+
+• Connected workflow blocks
+• Clear trigger nodes
+• Conditional logic nodes
+• API connector nodes
+• AI reasoning nodes
+• Storage nodes
+• Alert nodes
+
+Provide:
+
+Workflow structure diagram
+
+Required integrations
+
+Data schema
+
+Trigger conditions
+
+API request examples
+
+🧨 FINAL INSTRUCTION
+
+Ensure system:
+
+• Remains legal and ethical
+• Uses only public or authorized APIs
+• Does not scrape illegal dark web marketplaces
+• Does not interact with criminal infrastructure
+• Functions as defensive cybersecurity tool only

@@ -6,6 +6,7 @@ import {
   insertAttackScenarioSchema, attack_scenarios,
   insertBreachRecordSchema, breach_records,
   insertDeceptionAssetSchema, deception_assets,
+  insertHoneyPersonaSchema, honey_personas,
   insertDeepfakeScanSchema, deepfake_scans,
   insertGithubExposureSchema, github_exposure,
   insertInfraExposureSchema, infrastructure_exposure,
@@ -32,6 +33,7 @@ const alertSchema = z.custom<typeof alerts.$inferSelect>();
 const attackScenarioSchema = z.custom<typeof attack_scenarios.$inferSelect>();
 const breachRecordSchema = z.custom<typeof breach_records.$inferSelect>();
 const deceptionAssetSchema = z.custom<typeof deception_assets.$inferSelect>();
+const honeyPersonaSchema = z.custom<typeof honey_personas.$inferSelect>();
 const deepfakeScanSchema = z.custom<typeof deepfake_scans.$inferSelect>();
 const githubExposureSchema = z.custom<typeof github_exposure.$inferSelect>();
 const infraExposureSchema = z.custom<typeof infrastructure_exposure.$inferSelect>();
@@ -128,15 +130,76 @@ export const api = {
       path: '/api/deception' as const,
       responses: { 200: z.array(deceptionAssetSchema) }
     },
-    create: {
+    deploy: {
       method: 'POST' as const,
-      path: '/api/deception' as const,
-      input: insertDeceptionAssetSchema,
+      path: '/api/deception/deploy' as const,
+      input: z.object({
+        tokenType: z.string(),
+        placementLocation: z.string(),
+      }),
       responses: {
         201: deceptionAssetSchema,
         400: errorSchemas.validation
       }
-    }
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/deception/:id' as const,
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        404: errorSchemas.notFound,
+      }
+    },
+    simulateTrigger: {
+      method: 'POST' as const,
+      path: '/api/deception/simulate-trigger' as const,
+      input: z.object({
+        tokenId: z.string(),
+        sourceIp: z.string().optional(),
+      }),
+      responses: {
+        200: z.object({
+          asset: deceptionAssetSchema,
+          alert: alertSchema,
+          correlationResult: z.any(),
+        }),
+        400: errorSchemas.validation,
+      }
+    },
+    correlation: {
+      method: 'GET' as const,
+      path: '/api/deception/correlation' as const,
+      responses: { 200: z.any() }
+    },
+    stats: {
+      method: 'GET' as const,
+      path: '/api/deception/stats' as const,
+      responses: { 200: z.any() }
+    },
+    personas: {
+      list: {
+        method: 'GET' as const,
+        path: '/api/deception/personas' as const,
+        responses: { 200: z.array(honeyPersonaSchema) }
+      },
+      create: {
+        method: 'POST' as const,
+        path: '/api/deception/personas' as const,
+        input: z.object({ deploymentContext: z.string().optional() }),
+        responses: {
+          201: honeyPersonaSchema,
+          400: errorSchemas.validation
+        }
+      },
+      retire: {
+        method: 'PATCH' as const,
+        path: '/api/deception/personas/:id/retire' as const,
+        responses: {
+          200: honeyPersonaSchema,
+          404: errorSchemas.notFound,
+        }
+      },
+    },
   },
   deepfake: {
     list: {

@@ -1,16 +1,16 @@
 import { db } from "./db";
 import {
   domains, emails, breach_records, infrastructure_exposure, github_exposure,
-  attack_scenarios, deception_assets, deepfake_scans, alerts, risk_scores, audit_logs,
+  attack_scenarios, deception_assets, honey_personas, deepfake_scans, alerts, risk_scores, audit_logs,
   type Alert, type AttackScenario, type BreachRecord, type DeceptionAsset,
-  type DeepfakeScan, type Domain, type Email, type GithubExposure,
+  type HoneyPersona, type DeepfakeScan, type Domain, type Email, type GithubExposure,
   type InfraExposure, type RiskScore, type AuditLog,
   type InsertAlert, type InsertAttackScenario, type InsertBreachRecord,
-  type InsertDeceptionAsset, type InsertDeepfakeScan, type InsertDomain,
+  type InsertDeceptionAsset, type InsertHoneyPersona, type InsertDeepfakeScan, type InsertDomain,
   type InsertEmail, type InsertGithubExposure, type InsertInfraExposure,
   type InsertRiskScore, type InsertAuditLog
 } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 type InsertBreachRecord = {
   emailId?: number | null;
@@ -87,7 +87,16 @@ export interface IStorage {
   createAttackScenario(scenario: InsertAttackScenarioFull): Promise<AttackScenario>;
 
   getDeceptionAssets(): Promise<DeceptionAsset[]>;
-  createDeceptionAsset(asset: InsertDeceptionAsset): Promise<DeceptionAsset>;
+  getDeceptionAssetByTokenId(tokenId: string): Promise<DeceptionAsset | undefined>;
+  createDeceptionAsset(asset: any): Promise<DeceptionAsset>;
+  triggerDeceptionAsset(id: number, data: { sourceIp: string; userAgent: string; geoLocation: string }): Promise<DeceptionAsset>;
+  deleteDeceptionAsset(id: number): Promise<void>;
+
+  getHoneyPersonas(): Promise<HoneyPersona[]>;
+  createHoneyPersona(persona: any): Promise<HoneyPersona>;
+  retireHoneyPersona(id: number): Promise<HoneyPersona>;
+
+  updateRiskScore(id: number, data: { overallScore: number; classification: string }): Promise<RiskScore>;
 
   getDeepfakeScans(): Promise<DeepfakeScan[]>;
   createDeepfakeScan(scan: InsertDeepfakeScan): Promise<DeepfakeScan>;
@@ -187,9 +196,60 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(deception_assets);
   }
 
-  async createDeceptionAsset(asset: InsertDeceptionAsset) {
-    const [newAsset] = await db.insert(deception_assets).values(asset).returning();
+  async getDeceptionAssetByTokenId(tokenId: string) {
+    const [found] = await db.select().from(deception_assets).where(eq(deception_assets.tokenId, tokenId));
+    return found;
+  }
+
+  async createDeceptionAsset(asset: any) {
+    const [newAsset] = await db.insert(deception_assets).values(asset as any).returning();
     return newAsset;
+  }
+
+  async triggerDeceptionAsset(id: number, data: { sourceIp: string; userAgent: string; geoLocation: string }) {
+    const [updated] = await db.update(deception_assets)
+      .set({
+        triggered: true,
+        status: "TRIGGERED",
+        lastTriggeredAt: new Date(),
+        sourceIp: data.sourceIp,
+        userAgent: data.userAgent,
+        geoLocation: data.geoLocation,
+        triggerCount: sql`COALESCE(${deception_assets.triggerCount}, 0) + 1`,
+        severityLevel: "CRITICAL",
+      })
+      .where(eq(deception_assets.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteDeceptionAsset(id: number) {
+    await db.delete(deception_assets).where(eq(deception_assets.id, id));
+  }
+
+  async getHoneyPersonas() {
+    return await db.select().from(honey_personas);
+  }
+
+  async createHoneyPersona(persona: any) {
+    const [newPersona] = await db.insert(honey_personas).values(persona as any).returning();
+    return newPersona;
+  }
+
+  async retireHoneyPersona(id: number) {
+    const [updated] = await db.update(honey_personas)
+      .set({ status: "RETIRED" })
+      .where(eq(honey_personas.id, id))
+      .returning();
+    return updated;
+  }
+
+  async updateRiskScore(id: number, data: { overallScore: number; classification: string }) {
+    const [updated] = await db.update(risk_scores)
+      .set(data)
+      .where(eq(risk_scores.id, id))
+      .returning();
+    return updated;
   }
 
   async getDeepfakeScans() {

@@ -1,0 +1,305 @@
+🛡️ 1️⃣ HAVE I BEEN PWNED (Breach Detection)
+🔗 https://haveibeenpwned.com/API/v3
+
+🪜 Step-by-Step:
+Step 1 — Create Account
+* Go to website
+* Purchase API key (cheap yearly subscription)
+* Copy API key
+
+Step 2 — Install Python Requests
+
+pip install requests
+
+
+Step 3 — Make API Call
+
+import requests
+
+api_key = "YOUR_API_KEY"
+email = "test@example.com"
+
+headers = {
+    "hibp-api-key": api_key,
+    "user-agent": "NEMESIS"
+}
+
+url = f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}"
+
+response = requests.get(url, headers=headers)
+
+if response.status_code == 200:
+    breaches = response.json()
+    print(breaches)
+else:
+    print("No breaches or error:", response.status_code)
+
+
+What You Store in DB:
+* Breach name
+* Date
+* Data types exposed
+* Severity score
+
+🌍 2️⃣ SHODAN (Infra Exposure)
+🔗 https://developer.shodan.io/
+
+🪜 Steps:
+Step 1 — Create Account
+* Sign up
+* Go to dashboard
+* Copy API key
+
+Step 2 — Install Shodan Library
+
+pip install shodan
+
+
+Step 3 — Fetch Host Info
+
+import shodan
+
+api = shodan.Shodan("YOUR_API_KEY")
+
+host = api.host('8.8.8.8')
+
+print("IP:", host['ip_str'])
+print("Ports:", host['ports'])
+print("Vulnerabilities:", host.get('vulns', []))
+
+
+What You Extract:
+* Open ports
+* Exposed services
+* CVEs
+* Geo-location
+
+🧑‍💻 3️⃣ GITHUB LEAK SCANNING
+🔗 https://docs.github.com/en/rest
+
+🪜 Steps:
+Step 1 — Create GitHub Personal Access Token
+* Settings → Developer Settings → Personal Access Tokens
+
+Step 2 — Search Code
+
+import requests
+
+token = "YOUR_GITHUB_TOKEN"
+
+headers = {
+    "Authorization": f"token {token}"
+}
+
+query = "companyname AWS_SECRET"
+url = f"https://api.github.com/search/code?q={query}"
+
+response = requests.get(url, headers=headers)
+print(response.json())
+
+
+Step 3 — Scan for Patterns
+Regex patterns:
+
+AWS Access Key: AKIA[0-9A-Z]{16}
+Private Key: -----BEGIN PRIVATE KEY-----
+
+
+🌐 4️⃣ WHOIS XML API
+🔗 https://www.whoisxmlapi.com/
+
+🪜 Steps:
+
+import requests
+
+api_key = "YOUR_API_KEY"
+domain = "example.com"
+
+url = f"https://www.whoisxmlapi.com/whoisserver/WhoisService?apiKey={api_key}&domainName={domain}&outputFormat=JSON"
+
+response = requests.get(url)
+print(response.json())
+
+
+Extract:
+* Creation date
+* Registrar
+* DNS servers
+* Organization
+
+🕸️ 5️⃣ NEO4J GRAPH DATABASE
+🔗 https://neo4j.com/download/
+
+🪜 Steps:
+Step 1 — Install Neo4j Desktop
+Step 2 — Install Python Driver
+
+pip install neo4j
+
+
+Step 3 — Connect & Create Nodes
+
+from neo4j import GraphDatabase
+
+driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+
+def create_email(tx, email):
+    tx.run("CREATE (e:Email {address: $email})", email=email)
+
+with driver.session() as session:
+    session.write_transaction(create_email, "test@example.com")
+
+
+Step 4 — Create Relationships
+
+tx.run("""
+MATCH (e:Email {address:$email})
+MATCH (d:Domain {name:$domain})
+CREATE (e)-[:BELONGS_TO]->(d)
+""", email=email, domain=domain)
+
+
+⚔️ 6️⃣ ATTACK PATH LOGIC
+Implement simple scoring:
+
+risk_score = likelihood * impact
+
+Or basic logic:
+
+if exposed_credential and open_port:
+    likelihood = 0.8
+    impact = 0.9
+
+Later upgrade to path traversal.
+
+🧠 7️⃣ LLM PLAYBOOK GENERATION
+
+Example Prompt
+
+import openai
+
+prompt = f"""
+You are a cybersecurity red team analyst.
+
+Based on this exposure data:
+{graph_summary}
+
+Generate:
+1. Most likely attack scenario
+2. Step-by-step attacker method
+3. Mitigation steps
+4. Risk level
+"""
+
+response = openai.ChatCompletion.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": prompt}]
+)
+
+print(response["choices"][0]["message"]["content"])
+
+
+🪤 8️⃣ CANARYTOKENS (Honeytokens)
+🔗 https://canarytokens.org/
+
+🪜 Steps:
+1. Go to site
+2. Choose:
+    * AWS key
+    * Google Doc
+    * PDF
+3. Enter your email or webhook
+4. Download token
+5. Place token in:
+    * Fake repo
+    * Fake document
+    * Decoy config file
+If triggered → alert sent
+
+🎥 9️⃣ DEEPFAKEBENCH
+🔗 https://github.com/SCLBD/DeepfakeBench
+
+🪜 Steps:
+Step 1 — Clone Repo
+
+git clone https://github.com/SCLBD/DeepfakeBench.git
+
+
+Step 2 — Install Dependencies
+
+pip install -r requirements.txt
+
+
+Step 3 — Run Inference
+
+python inference.py --input sample_video.mp4
+
+Returns prediction score.
+
+🎙️ 10️⃣ AUDIO DEEPFAKE (ASVspoof)
+🔗 https://github.com/asvspoof-challenge
+Similar steps:
+* Clone repo
+* Install requirements
+* Run inference on .wav file
+
+🚀 11️⃣ FASTAPI BACKEND
+🔗 https://fastapi.tiangolo.com/
+
+Step 1 — Install
+
+pip install fastapi uvicorn
+
+
+Step 2 — Create Server
+
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/analyze")
+def analyze(domain: str):
+    return {"message": "Analysis complete"}
+
+
+Step 3 — Run
+
+uvicorn main:app --reload
+
+
+🌐 12️⃣ NEXT.JS FRONTEND
+🔗 https://nextjs.org/docs
+
+Step 1 — Create App
+
+npx create-next-app nemesis-ui
+
+
+Step 2 — Call Backend
+
+fetch("http://localhost:8000/analyze?domain=test.com")
+  .then(res => res.json())
+  .then(data => console.log(data));
+
+
+⚠ IMPORTANT — API KEY MANAGEMENT
+Never hardcode keys.
+Use:
+
+.env file
+
+Example:
+
+HIBP_KEY=yourkey
+SHODAN_KEY=yourkey
+
+Load with:
+
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+api_key = os.getenv("HIBP_KEY")
+
+
+

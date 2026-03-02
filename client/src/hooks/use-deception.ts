@@ -1,8 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "@shared/routes";
-import { z } from "zod";
-
-type DeceptionAssetInput = z.infer<typeof api.deception.create.input>;
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export function useDeceptionAssets() {
   return useQuery({
@@ -10,25 +8,111 @@ export function useDeceptionAssets() {
     queryFn: async () => {
       const res = await fetch(api.deception.list.path, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch deception assets");
-      return api.deception.list.responses[200].parse(await res.json());
+      return res.json();
     },
   });
 }
 
-export function useCreateDeceptionAsset() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (data: DeceptionAssetInput) => {
-      const validated = api.deception.create.input.parse(data);
-      const res = await fetch(api.deception.create.path, {
-        method: api.deception.create.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(validated),
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to create deception asset");
-      return api.deception.create.responses[201].parse(await res.json());
+export function useDeceptionStats() {
+  return useQuery({
+    queryKey: [api.deception.stats.path],
+    queryFn: async () => {
+      const res = await fetch(api.deception.stats.path, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch deception stats");
+      return res.json();
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.deception.list.path] }),
+  });
+}
+
+export function useCorrelation() {
+  return useQuery({
+    queryKey: [api.deception.correlation.path],
+    queryFn: async () => {
+      const res = await fetch(api.deception.correlation.path, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch correlation data");
+      return res.json();
+    },
+  });
+}
+
+export function useDeployHoneytoken() {
+  return useMutation({
+    mutationFn: async (data: { tokenType: string; placementLocation: string }) => {
+      const res = await apiRequest("POST", api.deception.deploy.path, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.deception.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.deception.stats.path] });
+      queryClient.invalidateQueries({ queryKey: ['/api/audit'] });
+    },
+  });
+}
+
+export function useDeleteDeceptionAsset() {
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/deception/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.deception.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.deception.stats.path] });
+    },
+  });
+}
+
+export function useSimulateTrigger() {
+  return useMutation({
+    mutationFn: async (data: { tokenId: string; sourceIp?: string }) => {
+      const res = await apiRequest("POST", api.deception.simulateTrigger.path, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.deception.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.deception.stats.path] });
+      queryClient.invalidateQueries({ queryKey: [api.deception.correlation.path] });
+      queryClient.invalidateQueries({ queryKey: ['/api/alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/risk'] });
+    },
+  });
+}
+
+export function useHoneyPersonas() {
+  return useQuery({
+    queryKey: [api.deception.personas.list.path],
+    queryFn: async () => {
+      const res = await fetch(api.deception.personas.list.path, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch honey personas");
+      return res.json();
+    },
+  });
+}
+
+export function useCreateHoneyPersona() {
+  return useMutation({
+    mutationFn: async (data: { deploymentContext?: string }) => {
+      const res = await apiRequest("POST", api.deception.personas.create.path, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.deception.personas.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.deception.stats.path] });
+      queryClient.invalidateQueries({ queryKey: ['/api/audit'] });
+    },
+  });
+}
+
+export function useRetirePersona() {
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("PATCH", `/api/deception/personas/${id}/retire`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.deception.personas.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.deception.stats.path] });
+    },
   });
 }
