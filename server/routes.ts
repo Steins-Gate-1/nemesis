@@ -3,6 +3,7 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api, errorSchemas } from "@shared/routes";
 import { z } from "zod";
+import { analyzeDomain } from "./osint/pipeline";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -14,35 +15,40 @@ export async function registerRoutes(
     res.json(stats);
   });
 
-  // Scans - Analyze Domain/Email
+  // Scans - Analyze Domain/Email (Real OSINT Pipeline)
   app.post(api.scans.analyze.path, async (req, res) => {
     try {
       const input = api.scans.analyze.input.parse(req.body);
-      
-      // Log the action
+
+      if (input.target.length > 253) {
+        return res.status(400).json({ message: "Target exceeds maximum length", field: "target" });
+      }
+
+      if (input.type === "domain") {
+        const result = await analyzeDomain(input.target);
+        return res.json({
+          success: true,
+          message: `Analysis complete. Exposure level: ${result.exposure_level}. Score: ${result.exposure_score}.`,
+          data: result,
+        });
+      }
+
       await storage.createAuditLog({
         action: `Analyze ${input.type}`,
-        user: "system",
-        details: `Target: ${input.target}`
+        user: "SYSTEM",
+        details: `Target: ${input.target}`,
       });
 
-      // Simulate an analysis taking place
-      setTimeout(async () => {
-        await storage.createAlert({
-          title: `Analysis Complete: ${input.target}`,
-          description: `Finished scanning ${input.target} across threat intelligence sources.`,
-          severity: "Low",
-          isRead: false
-        });
-      }, 5000);
-
-      res.json({ success: true, message: "Analysis initiated." });
+      res.json({ success: true, message: "Analysis initiated for email target." });
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({
           message: err.errors[0].message,
           field: err.errors[0].path.join('.'),
         });
+      }
+      if (err instanceof Error) {
+        return res.status(400).json({ message: err.message, field: "target" });
       }
       throw err;
     }

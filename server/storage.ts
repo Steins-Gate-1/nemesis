@@ -12,8 +12,42 @@ import {
 } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
+type InsertBreachRecord = {
+  emailId?: number | null;
+  title: string;
+  domain?: string | null;
+  breachDate?: Date | null;
+  description?: string | null;
+  dataClasses?: any;
+  severity: string;
+};
+
+type InsertInfraExposure = {
+  domainId?: number | null;
+  ip: string;
+  ports?: any;
+  vulnerabilities?: any;
+  severity: string;
+};
+
+type InsertGithubExposure = {
+  domainId?: number | null;
+  repoUrl: string;
+  secretType?: string | null;
+  snippet?: string | null;
+  severity: string;
+};
+
+type InsertRiskScore = {
+  domainId?: number | null;
+  exposureSeverity: number;
+  attackLikelihood: number;
+  operationalImpact: number;
+  overallScore: number;
+  classification: string;
+};
+
 export interface IStorage {
-  // Stats
   getDashboardStats(): Promise<{
     activeAlerts: number;
     totalRiskScore: number;
@@ -21,34 +55,32 @@ export interface IStorage {
     deceptionTokensTriggered: number;
   }>;
 
-  // Alerts
   getAlerts(): Promise<Alert[]>;
   createAlert(alert: InsertAlert): Promise<Alert>;
   markAlertRead(id: number): Promise<Alert>;
 
-  // Threats
   getBreachRecords(): Promise<BreachRecord[]>;
+  createBreachRecord(record: InsertBreachRecord): Promise<BreachRecord>;
   getInfraExposure(): Promise<InfraExposure[]>;
+  createInfraExposure(exposure: InsertInfraExposure): Promise<InfraExposure>;
   getGithubExposure(): Promise<GithubExposure[]>;
+  createGithubExposure(exposure: InsertGithubExposure): Promise<GithubExposure>;
   getAttackScenarios(): Promise<AttackScenario[]>;
 
-  // Deception
   getDeceptionAssets(): Promise<DeceptionAsset[]>;
   createDeceptionAsset(asset: InsertDeceptionAsset): Promise<DeceptionAsset>;
 
-  // Deepfake
   getDeepfakeScans(): Promise<DeepfakeScan[]>;
   createDeepfakeScan(scan: InsertDeepfakeScan): Promise<DeepfakeScan>;
 
-  // Risk
   getRiskScores(): Promise<RiskScore[]>;
+  createRiskScore(score: InsertRiskScore): Promise<RiskScore>;
 
-  // Audit
   getAuditLogs(): Promise<AuditLog[]>;
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
-  
-  // Scans
+
   createDomain(domain: InsertDomain): Promise<Domain>;
+  getDomainByName(name: string): Promise<Domain | undefined>;
   createEmail(email: InsertEmail): Promise<Email>;
 }
 
@@ -92,12 +124,27 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(breach_records);
   }
 
+  async createBreachRecord(record: InsertBreachRecord) {
+    const [newRecord] = await db.insert(breach_records).values(record as any).returning();
+    return newRecord;
+  }
+
   async getInfraExposure() {
     return await db.select().from(infrastructure_exposure);
   }
 
+  async createInfraExposure(exposure: InsertInfraExposure) {
+    const [newExposure] = await db.insert(infrastructure_exposure).values(exposure as any).returning();
+    return newExposure;
+  }
+
   async getGithubExposure() {
     return await db.select().from(github_exposure);
+  }
+
+  async createGithubExposure(exposure: InsertGithubExposure) {
+    const [newExposure] = await db.insert(github_exposure).values(exposure as any).returning();
+    return newExposure;
   }
 
   async getAttackScenarios() {
@@ -126,6 +173,11 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(risk_scores);
   }
 
+  async createRiskScore(score: InsertRiskScore) {
+    const [newScore] = await db.insert(risk_scores).values(score as any).returning();
+    return newScore;
+  }
+
   async getAuditLogs() {
     return await db.select().from(audit_logs);
   }
@@ -135,9 +187,14 @@ export class DatabaseStorage implements IStorage {
     return newLog;
   }
 
-  async createDomain(domain: InsertDomain) {
-    const [newDomain] = await db.insert(domains).values(domain).returning();
+  async createDomain(domainInput: InsertDomain) {
+    const [newDomain] = await db.insert(domains).values(domainInput).returning();
     return newDomain;
+  }
+
+  async getDomainByName(name: string) {
+    const [found] = await db.select().from(domains).where(eq(domains.domain, name));
+    return found;
   }
 
   async createEmail(email: InsertEmail) {

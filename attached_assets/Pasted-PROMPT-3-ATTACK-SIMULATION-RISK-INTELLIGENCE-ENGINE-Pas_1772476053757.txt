@@ -1,0 +1,263 @@
+PROMPT 3 — ATTACK SIMULATION & RISK INTELLIGENCE ENGINE
+
+Paste this as a standalone prompt into your AI website generator.
+
+🛡️ PROMPT: Build the Attack Simulation & Risk Intelligence Engine for NEMESIS
+
+Act as a senior red-team strategist and cyber threat modeling architect designing the predictive attack simulation engine for a national-level cyber defense platform called NEMESIS.
+
+This module must convert raw exposure intelligence into structured, realistic, and explainable attacker playbooks.
+
+No generic summaries.
+No hallucinated attack chains.
+No random AI storytelling.
+
+The attack simulation must be deterministic, explainable, and based strictly on collected exposure data.
+
+🎯 OBJECTIVE
+
+Design a Risk Intelligence Engine that:
+
+• Consumes normalized OSINT data
+• Identifies possible attack entry points
+• Simulates attacker pathways
+• Calculates likelihood & impact
+• Generates structured attack scenarios
+• Produces tactical mitigation guidance
+• Outputs deterministic risk classification
+
+This module must integrate with the exposure data from Prompt 2.
+
+🧠 CORE CONCEPT — ATTACK PATH MODELING
+
+Instead of random AI generation, implement structured threat modeling logic.
+
+STEP 1 — IDENTIFY ENTRY POINTS
+
+From OSINT data, identify possible attack vectors:
+
+IF breach_count > 0
+→ Entry Vector: Credential Reuse Attack
+
+IF open_ports detected
+→ Entry Vector: Remote Service Exploitation
+
+IF GitHub secret leak detected
+→ Entry Vector: Key-Based Infrastructure Compromise
+
+IF domain recently registered
+→ Entry Vector: Phishing & Brand Impersonation
+
+Each entry vector must map to known real-world tactics.
+
+STEP 2 — MAP TO ATTACK CATEGORIES
+
+Map exposure to structured attack classes:
+
+• Initial Access
+• Privilege Escalation
+• Lateral Movement
+• Data Exfiltration
+• Persistence
+• Command & Control
+
+Follow structured cyber kill-chain logic.
+
+Do not use vague descriptions.
+
+STEP 3 — BUILD ATTACK SCENARIO OBJECTS
+
+For each detected entry vector, generate structured scenario:
+
+{
+"scenario_id": "",
+"entry_point": "",
+"attack_steps": [
+"Step 1",
+"Step 2",
+"Step 3"
+],
+"required_conditions": [],
+"likelihood_score": number,
+"impact_score": number,
+"risk_score": number,
+"recommended_mitigations": []
+}
+
+📊 RISK CALCULATION FRAMEWORK
+
+Define deterministic scoring.
+
+Likelihood Score based on:
+
+• Exposure severity
+• Number of vulnerabilities
+• Availability of credentials
+• Ease of exploitation
+
+Impact Score based on:
+
+• Critical infrastructure exposure
+• Credential privilege level
+• Number of open services
+• Type of data exposed
+
+Risk Score =
+
+likelihood × impact
+
+Map result to:
+
+LOW
+MODERATE
+HIGH
+CRITICAL
+
+No randomness allowed.
+
+⚔ ATTACK SCENARIO EXAMPLES (REALISTIC)
+
+Example 1 — Credential Reuse Attack
+
+IF:
+Breach detected + email reused + open SSH port
+
+Simulate:
+
+Step 1 — Attacker acquires breached credential
+Step 2 — Attempts credential reuse on exposed SSH
+Step 3 — Gains remote access
+Step 4 — Escalates privileges
+Step 5 — Establishes persistence
+
+Mitigation:
+
+• Enforce MFA
+• Rotate credentials
+• Disable password login on SSH
+
+Example 2 — GitHub Secret Exposure
+
+IF:
+Private key detected in repo
+
+Simulate:
+
+Step 1 — Attacker clones repo
+Step 2 — Extracts key
+Step 3 — Accesses cloud resources
+Step 4 — Exfiltrates sensitive data
+
+Mitigation:
+
+• Revoke key
+• Rotate secrets
+• Enable secret scanning
+
+🧠 AI PLAYBOOK GENERATION
+
+Use LLM to:
+
+• Convert structured scenario JSON into readable tactical brief
+• Generate executive summary
+• Generate mitigation checklist
+
+AI must:
+
+• Not invent vulnerabilities
+• Only use provided structured exposure data
+• Return JSON output
+• Provide confidence explanation
+
+Prompt structure must include:
+
+Exposure Data → Structured Risk Factors → Generate Attack Playbook
+
+🔍 MITRE-STYLE TAGGING (OPTIONAL BUT IMPRESSIVE)
+
+Tag each attack scenario with:
+
+• Tactic category
+• Technique type
+• Attack objective
+
+Do not fabricate external references — only structured categories.
+
+📦 DATABASE STORAGE
+
+Store each scenario in:
+
+attack_scenarios table:
+
+Fields:
+
+• id
+• domain
+• scenario_json
+• risk_score
+• severity_level
+• mitigation_summary
+• created_at
+
+🔔 ALERT TRIGGERS
+
+If risk_score ≥ threshold:
+
+• Create alert record
+• Push to alerts table
+• Flag domain as high priority
+
+🧮 RISK EXPLANATION PANEL
+
+The system must produce:
+
+Why risk is HIGH:
+
+• 3 breached credentials detected
+• SSH exposed on port 22
+• GitHub repository contains leaked token
+
+Clear reasoning.
+
+No vague AI text.
+
+🛡️ SECURITY & ETHICS REQUIREMENTS
+
+• Do not simulate illegal activity
+• Do not encourage exploit execution
+• Only model hypothetical attack paths
+• Present mitigation as primary output
+
+This is defensive threat modeling.
+
+⚡ PERFORMANCE REQUIREMENTS
+
+• Attack simulation must execute in < 5 seconds
+• Must handle multiple scenarios
+• Must support concurrent analysis
+
+📊 OUTPUT FORMAT
+
+Return structured JSON:
+
+{
+"attack_scenarios": [],
+"highest_risk_scenario": {},
+"overall_risk_score": number,
+"overall_risk_level": "",
+"risk_explanation": ""
+}
+
+🧾 DOCUMENTATION REQUIRED
+
+Generate:
+
+• Threat modeling logic explanation
+• Risk formula breakdown
+• Scenario mapping table
+• Mitigation generation method
+• Sample output JSON
+
+Everything must be production-grade and realistic.
+
+No pseudo AI fluff.
