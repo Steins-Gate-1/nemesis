@@ -5,12 +5,23 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
+// Pages
+import Dashboard from "./pages/dashboard";
+import Threats from "./pages/threats";
+import Deception from "./pages/deception";
+import Deepfake from "./pages/deepfake";
+import Risk from "./pages/risk";
+import Audit from "./pages/audit";
+
 function Router() {
   return (
     <Switch>
-      {/* Add pages below */}
-      {/* <Route path="/" component={Home}/> */}
-      {/* Fallback to 404 */}
+      <Route path="/" component={Dashboard}/>
+      <Route path="/threats" component={Threats}/>
+      <Route path="/deception" component={Deception}/>
+      <Route path="/deepfake" component={Deepfake}/>
+      <Route path="/risk" component={Risk}/>
+      <Route path="/audit" component={Audit}/>
       <Route component={NotFound} />
     </Switch>
   );

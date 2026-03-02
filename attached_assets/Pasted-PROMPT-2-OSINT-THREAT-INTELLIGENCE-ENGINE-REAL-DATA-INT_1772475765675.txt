@@ -1,0 +1,275 @@
+PROMPT 2 — OSINT & THREAT INTELLIGENCE ENGINE (REAL DATA INTEGRATION)
+
+Paste this as a standalone prompt into your AI website generator.
+
+🛡️ PROMPT: Build the OSINT & Threat Intelligence Engine for NEMESIS
+
+Act as a senior cyber threat intelligence engineer designing the real data ingestion and normalization engine for a military-grade cyber defense system called NEMESIS.
+
+This module must collect, validate, normalize, store, and score intelligence data using real APIs and secure backend functions.
+
+No dummy data. No static examples.
+
+🎯 OBJECTIVE
+
+Design a working OSINT and threat intelligence ingestion system that:
+
+• Collects exposure data about a target domain or organization
+• Uses real APIs
+• Stores structured intelligence in database
+• Normalizes data
+• Handles failures safely
+• Prepares data for attack simulation
+
+This system must be legally compliant and use authorized APIs only.
+
+🏗️ CORE WORKFLOW
+
+Define a backend function:
+
+analyzeDomain(domain: string)
+
+The function must execute the following pipeline:
+
+1️⃣ Validate domain input
+2️⃣ Normalize input (remove http/https, trim spaces)
+3️⃣ Trigger parallel API calls
+4️⃣ Aggregate responses
+5️⃣ Normalize and classify results
+6️⃣ Store in database
+7️⃣ Return structured intelligence object
+
+All steps must include error handling and logging.
+
+🔎 API INTEGRATION 1 — HAVE I BEEN PWNED
+
+Use:
+https://haveibeenpwned.com/API/v3
+
+Function:
+Check if any emails associated with domain appear in known breaches.
+
+Process:
+
+• Extract email patterns from domain (example: *@domain.com)
+• Query HIBP endpoint per email
+• Handle:
+
+200 response
+
+404 no breach
+
+429 rate limit
+• Normalize response fields:
+
+breach_name
+
+breach_date
+
+data_classes
+
+verified
+• Assign severity:
+
+Credentials exposed = HIGH
+
+Emails only = MEDIUM
+
+No breach = LOW
+
+Store results in:
+breach_records table
+
+🌍 API INTEGRATION 2 — SHODAN
+
+Use:
+https://developer.shodan.io/
+
+Purpose:
+Detect publicly exposed infrastructure.
+
+Process:
+
+• Resolve domain to IP
+• Query Shodan host endpoint
+• Extract:
+
+Open ports
+
+Services
+
+CVEs
+
+Organization
+
+Geo-location
+• Assign severity:
+
+Open database ports (27017, 3306, 5432) = CRITICAL
+
+SSH exposed = MEDIUM
+
+Known CVEs = HIGH
+• Handle API key errors
+• Handle rate limiting
+
+Store results in:
+infrastructure_exposure table
+
+🧑‍💻 API INTEGRATION 3 — GITHUB EXPOSURE
+
+Use:
+GitHub REST API Search Endpoint
+
+Purpose:
+Detect leaked secrets or references.
+
+Process:
+
+• Search for:
+
+Domain name
+
+Company name
+
+Email patterns
+• Use regex scanning on results:
+
+AWS keys
+
+Private keys
+
+API tokens
+• Assign severity:
+
+Hardcoded private key = CRITICAL
+
+Public config file = MEDIUM
+• Handle pagination
+• Respect rate limits
+
+Store results in:
+github_exposure table
+
+🌐 API INTEGRATION 4 — WHOIS
+
+Use:
+WHOIS API
+
+Purpose:
+Collect domain metadata.
+
+Extract:
+• Registration date
+• Expiry date
+• Registrar
+• Name servers
+
+Classify:
+• Recently registered domain (< 6 months) = risk flag
+• Expiring domain soon = risk flag
+
+Store in:
+domains table
+
+🔄 DATA NORMALIZATION ENGINE
+
+After all API calls:
+
+Create a unified object:
+
+{
+domain: "",
+breach_count: number,
+exposed_services: [],
+github_exposures: [],
+domain_age_days: number,
+vulnerabilities: [],
+severity_breakdown: {}
+}
+
+All fields must follow consistent schema.
+
+⚠ ERROR HANDLING REQUIREMENTS
+
+For every API:
+
+• Retry on timeout (max 3 attempts)
+• Catch HTTP errors
+• Log errors in audit_logs table
+• Continue pipeline even if one API fails
+• Mark failed API status in response object
+
+🧮 SEVERITY MAPPING FRAMEWORK
+
+Define numeric mapping:
+
+LOW = 1
+MEDIUM = 3
+HIGH = 6
+CRITICAL = 10
+
+Total exposure score =
+Sum of severity values across modules
+
+Do not use random values.
+
+🗄️ DATABASE STORAGE RULES
+
+Every stored record must include:
+
+• id (UUID)
+• domain reference
+• source (HIBP, Shodan, GitHub, WHOIS)
+• severity_level
+• raw_response (JSON)
+• processed_summary
+• created_at timestamp
+
+Ensure referential integrity.
+
+🔐 SECURITY REQUIREMENTS
+
+• API keys stored in environment variables only
+• Do not expose keys in frontend
+• All calls made server-side
+• Validate input against injection attempts
+• Limit input length
+• Sanitize domain string
+
+⚡ PERFORMANCE REQUIREMENTS
+
+• Parallelize API calls
+• Use async functions
+• Timeout after 10 seconds per API
+• Total pipeline must complete within 15 seconds
+
+🧠 OUTPUT FORMAT
+
+Return structured JSON:
+
+{
+"domain": "",
+"breach_summary": {},
+"infrastructure_summary": {},
+"github_summary": {},
+"whois_summary": {},
+"exposure_score": number,
+"exposure_level": "LOW | MODERATE | HIGH | CRITICAL"
+}
+
+🧾 DOCUMENTATION REQUIREMENTS
+
+Provide:
+
+• API call structure
+• Example request and response
+• Data normalization strategy
+• Database mapping explanation
+• Severity scoring logic
+• Failure handling strategy
+• Rate limit mitigation plan
+
+Everything must be production-ready.
+
+No pseudo-code without explanation.

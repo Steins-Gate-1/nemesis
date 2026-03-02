@@ -1,0 +1,215 @@
+PROMPT 1 — CORE SYSTEM IDENTITY & ARCHITECTURE
+
+Paste this into your AI website generator.
+
+🛡️ PROMPT: Build a Military-Grade Cyber Defense Platform (System Foundation)
+
+Act as a world-class cybersecurity systems architect designing a next-generation autonomous cyber defense platform for national intelligence agencies and special forces.
+
+The system name is:
+
+NEMESIS — National Enterprise Monitoring & Early Security Intelligence System
+
+This is not a consumer SaaS product.
+It is a high-assurance cyber defense command platform designed for:
+
+• Intelligence agencies
+• Counter-terror units
+• Special forces cyber divisions
+• Critical infrastructure protection
+• Government defense networks
+
+🎯 SYSTEM OBJECTIVE
+
+Design a real, working cyber defense system that:
+
+• Predicts cyberattacks before they occur
+• Monitors exposure across public infrastructure
+• Aggregates threat intelligence
+• Simulates attacker pathways
+• Deploys deception assets
+• Detects identity misuse and deepfake attacks
+• Generates tactical mitigation playbooks
+• Operates in a legally compliant manner
+
+This system must integrate real APIs and tools, not dummy simulations.
+
+🏗️ SYSTEM ARCHITECTURE REQUIREMENTS
+
+Design NEMESIS with the following layered architecture:
+
+LAYER 1 — FRONTEND COMMAND INTERFACE
+
+Create a dark, cinematic, military-grade command dashboard with:
+
+• Real-time threat panels
+• Risk score meters
+• Attack path visualization
+• Deepfake detection interface
+• Deception asset management panel
+• Active targeting alerts
+• Intelligence timeline
+
+UI Style:
+
+Matte black
+
+Deep navy gradients
+
+Subtle neon red and cyan highlights
+
+Terminal-style animations
+
+Tactical grid overlays
+
+Minimalist but intimidating
+
+It should feel like a classified cyber command center.
+
+LAYER 2 — INTELLIGENCE BACKEND
+
+Use:
+
+• Supabase (PostgreSQL database)
+• Serverless functions (Edge Functions)
+• Secure environment variable handling
+• REST API endpoints
+
+The backend must:
+
+• Store OSINT data
+• Store breach results
+• Store infrastructure exposure
+• Store deception tokens
+• Store deepfake scan results
+• Store risk scores
+• Maintain audit logs
+
+Define database tables for:
+
+domains
+emails
+breach_records
+infrastructure_exposure
+github_exposure
+attack_scenarios
+deception_assets
+deepfake_scans
+alerts
+risk_scores
+audit_logs
+
+All tables must include timestamps and severity fields.
+
+LAYER 3 — EXTERNAL INTELLIGENCE INTEGRATION
+
+System must support integration with:
+
+• HaveIBeenPwned API
+• Shodan API
+• GitHub REST API
+• WHOIS API
+• Canarytokens webhook
+• Deepfake detection API (external hosted service)
+
+Each integration must:
+
+• Use secure API keys stored in environment variables
+• Validate responses
+• Handle rate limiting
+• Log failures
+• Retry on timeout
+
+LAYER 4 — INTELLIGENCE PIPELINE FLOW
+
+Define workflow:
+
+User inputs domain →
+Trigger analyzeDomain() →
+Call HIBP →
+Call Shodan →
+Call GitHub →
+Call WHOIS →
+Aggregate results →
+Store normalized data →
+Trigger Risk Engine →
+Generate Attack Playbook →
+Update dashboard →
+Trigger alerts if necessary
+
+All workflows must be modular and independently callable.
+
+🔐 SECURITY REQUIREMENTS
+
+The platform must:
+
+• Use HTTPS only
+• Protect API keys in environment variables
+• Prevent SQL injection
+• Use role-based authentication
+• Log all intelligence access
+• Maintain immutable audit trail
+• Comply with legal OSINT collection policies
+• Never scrape illegal dark web markets
+
+⚡ SCALABILITY REQUIREMENTS
+
+Design system to:
+
+• Support multi-agency use
+• Handle concurrent domain analysis
+• Support high-volume alerting
+• Maintain real-time responsiveness
+• Allow future SIEM integration
+
+🧠 AI INTEGRATION REQUIREMENTS
+
+Integrate OpenAI or Gemini API for:
+
+• Generating attack playbooks
+• Risk explanation summaries
+• Executive threat reports
+
+AI must:
+
+• Receive structured exposure data
+• Return structured JSON output
+• Never hallucinate external data
+• Base output strictly on collected intelligence
+
+📊 RISK MODEL FRAMEWORK
+
+Define scoring formula that:
+
+• Calculates exposure severity
+• Calculates attack likelihood
+• Calculates operational impact
+• Generates overall risk classification:
+
+Low
+
+Moderate
+
+High
+
+Critical
+
+Risk logic must be explainable and deterministic.
+
+🧾 OUTPUT REQUIREMENTS
+
+Generate:
+
+• System architecture diagram
+• Database schema structure
+• API integration mapping
+• Endpoint definitions
+• Workflow diagram
+• UI component layout plan
+• Security model outline
+
+All explanations must be structured, production-ready, and realistic.
+
+Avoid placeholder text.
+Avoid dummy features.
+Focus on implementable components only.
