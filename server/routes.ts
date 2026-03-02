@@ -7,26 +7,27 @@ import { analyzeDomain } from "./osint/pipeline";
 import { simulateAttacks } from "./osint/attack-simulator";
 import { generatePlaybook } from "./osint/playbook-generator";
 import { deployHoneytoken, processWebhookTrigger, runCorrelation, generateHoneyPersona, getDeceptionStats } from "./deception/engine";
+import { processDeepfakeScan, calculateExposureScore, generateMitigationGuidanceDeterministic, getDeepfakeStats } from "./deepfake/engine";
+import { checkAndEscalateAlerts, isValidTransition } from "./alerts/engine";
+import { generateIncidentReport } from "./reports/generator";
+
+const startTime = Date.now();
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Dashboard Stats
   app.get(api.dashboard.stats.path, async (req, res) => {
     const stats = await storage.getDashboardStats();
     res.json(stats);
   });
 
-  // Scans - Analyze Domain/Email (Real OSINT Pipeline)
   app.post(api.scans.analyze.path, async (req, res) => {
     try {
       const input = api.scans.analyze.input.parse(req.body);
-
       if (input.target.length > 253) {
         return res.status(400).json({ message: "Target exceeds maximum length", field: "target" });
       }
-
       if (input.type === "domain") {
         const result = await analyzeDomain(input.target);
         return res.json({
@@ -35,20 +36,18 @@ export async function registerRoutes(
           data: result,
         });
       }
-
       await storage.createAuditLog({
         action: `Analyze ${input.type}`,
-        user: "SYSTEM",
+        actionType: "SCAN",
+        actorType: "SYSTEM",
+        user: "OSINT_ENGINE",
+        targetEntity: input.target,
         details: `Target: ${input.target}`,
       });
-
       res.json({ success: true, message: "Analysis initiated for email target." });
     } catch (err) {
       if (err instanceof z.ZodError) {
-        return res.status(400).json({
-          message: err.errors[0].message,
-          field: err.errors[0].path.join('.'),
-        });
+        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
       }
       if (err instanceof Error) {
         return res.status(400).json({ message: err.message, field: "target" });
@@ -57,43 +56,67 @@ export async function registerRoutes(
     }
   });
 
-  // Alerts
   app.get(api.alerts.list.path, async (req, res) => {
-    const alerts = await storage.getAlerts();
-    res.json(alerts);
+    const alertsList = await storage.getAlerts();
+    res.json(alertsList);
+  });
+
+  app.get(api.alerts.active.path, async (req, res) => {
+    const active = await storage.getActiveAlerts();
+    res.json(active);
   });
 
   app.patch(api.alerts.markRead.path, async (req, res) => {
     try {
       const alert = await storage.markAlertRead(Number(req.params.id));
-      if (!alert) {
-        return res.status(404).json({ message: "Alert not found" });
-      }
+      if (!alert) return res.status(404).json({ message: "Alert not found" });
       res.json(alert);
     } catch (err) {
       res.status(500).json({ message: "Internal server error" });
     }
   });
 
-  // Threats
+  app.patch(api.alerts.updateStatus.path, async (req, res) => {
+    try {
+      const input = api.alerts.updateStatus.input.parse(req.body);
+      const existing = (await storage.getAlerts()).find(a => a.id === Number(req.params.id));
+      if (!existing) return res.status(404).json({ message: "Alert not found" });
+      if (!isValidTransition(existing.status || "OPEN", input.status)) {
+        return res.status(400).json({ message: `Invalid transition from ${existing.status} to ${input.status}` });
+      }
+      const updated = await storage.updateAlertStatus(Number(req.params.id), input.status);
+      await storage.createAuditLog({
+        action: `Alert Status Updated: ${input.status}`,
+        actionType: "STATUS_CHANGE",
+        actorType: "ANALYST",
+        user: "OPERATOR",
+        targetEntity: "ALERT",
+        referenceId: String(req.params.id),
+        details: `Alert "${existing.title}" status changed from ${existing.status} to ${input.status}`,
+      });
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
+      }
+      res.status(500).json({ message: "Internal error" });
+    }
+  });
+
   app.get(api.threats.breaches.path, async (req, res) => {
-    const breaches = await storage.getBreachRecords();
-    res.json(breaches);
+    res.json(await storage.getBreachRecords());
   });
 
   app.get(api.threats.infrastructure.path, async (req, res) => {
-    const infra = await storage.getInfraExposure();
-    res.json(infra);
+    res.json(await storage.getInfraExposure());
   });
 
   app.get(api.threats.github.path, async (req, res) => {
-    const github = await storage.getGithubExposure();
-    res.json(github);
+    res.json(await storage.getGithubExposure());
   });
 
   app.get(api.threats.attackScenarios.path, async (req, res) => {
-    const scenarios = await storage.getAttackScenarios();
-    res.json(scenarios);
+    res.json(await storage.getAttackScenarios());
   });
 
   app.post(api.threats.simulateAttack.path, async (req, res) => {
@@ -102,22 +125,14 @@ export async function registerRoutes(
       const analysisResult = await analyzeDomain(input.domain);
       const simulation = analysisResult.attack_simulation;
       const playbook = analysisResult.playbook;
-
       if (!simulation) {
         return res.json({
-          attack_scenarios: [],
-          highest_risk_scenario: null,
-          overall_risk_score: 0,
-          overall_risk_level: "LOW",
-          risk_explanation: "No attack simulation data available.",
-          playbook: null,
+          attack_scenarios: [], highest_risk_scenario: null,
+          overall_risk_score: 0, overall_risk_level: "LOW",
+          risk_explanation: "No attack simulation data available.", playbook: null,
         });
       }
-
-      res.json({
-        ...simulation,
-        playbook,
-      });
+      res.json({ ...simulation, playbook });
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
@@ -129,10 +144,8 @@ export async function registerRoutes(
     }
   });
 
-  // Deception
   app.get(api.deception.list.path, async (req, res) => {
-    const assets = await storage.getDeceptionAssets();
-    res.json(assets);
+    res.json(await storage.getDeceptionAssets());
   });
 
   app.post(api.deception.deploy.path, async (req, res) => {
@@ -144,9 +157,7 @@ export async function registerRoutes(
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
       }
-      if (err instanceof Error) {
-        return res.status(400).json({ message: err.message });
-      }
+      if (err instanceof Error) return res.status(400).json({ message: err.message });
       throw err;
     }
   });
@@ -156,7 +167,11 @@ export async function registerRoutes(
       await storage.deleteDeceptionAsset(Number(req.params.id));
       await storage.createAuditLog({
         action: "Deception Asset Decommissioned",
+        actionType: "DELETE",
+        actorType: "ADMIN",
         user: "OPERATOR",
+        targetEntity: "DECEPTION_ASSET",
+        referenceId: req.params.id,
         details: `Asset ID ${req.params.id} removed from grid`,
       });
       res.json({ success: true });
@@ -174,14 +189,13 @@ export async function registerRoutes(
         userAgent: "Mozilla/5.0 (Recon Scanner)",
         geoLocation: "Unknown — Simulated Trigger",
       });
+      await checkAndEscalateAlerts();
       res.json(result);
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
       }
-      if (err instanceof Error) {
-        return res.status(400).json({ message: err.message });
-      }
+      if (err instanceof Error) return res.status(400).json({ message: err.message });
       throw err;
     }
   });
@@ -189,19 +203,14 @@ export async function registerRoutes(
   app.post('/webhook/canary', async (req, res) => {
     try {
       const tokenId = req.body?.token_id || req.body?.tokenId;
-      if (!tokenId) {
-        return res.status(400).json({ message: "Missing token_id" });
-      }
+      if (!tokenId) return res.status(400).json({ message: "Missing token_id" });
       const sourceIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || "unknown";
       const userAgent = req.headers['user-agent'] || "unknown";
-
       await processWebhookTrigger({
-        tokenId,
-        sourceIp,
-        userAgent,
+        tokenId, sourceIp, userAgent,
         geoLocation: req.body?.geo || "Unknown",
       });
-
+      await checkAndEscalateAlerts();
       res.json({ status: "received" });
     } catch (err) {
       if (err instanceof Error) {
@@ -213,8 +222,7 @@ export async function registerRoutes(
   });
 
   app.get(api.deception.correlation.path, async (req, res) => {
-    const result = await runCorrelation();
-    res.json(result);
+    res.json(await runCorrelation());
   });
 
   app.get(api.deception.stats.path, async (req, res) => {
@@ -224,8 +232,7 @@ export async function registerRoutes(
   });
 
   app.get(api.deception.personas.list.path, async (req, res) => {
-    const personas = await storage.getHoneyPersonas();
-    res.json(personas);
+    res.json(await storage.getHoneyPersonas());
   });
 
   app.post(api.deception.personas.create.path, async (req, res) => {
@@ -247,7 +254,11 @@ export async function registerRoutes(
       if (!persona) return res.status(404).json({ message: "Persona not found" });
       await storage.createAuditLog({
         action: "Honey Persona Retired",
+        actionType: "STATUS_CHANGE",
+        actorType: "ADMIN",
         user: "OPERATOR",
+        targetEntity: "HONEY_PERSONA",
+        referenceId: String(req.params.id),
         details: `Persona "${persona.name}" retired`,
       });
       res.json(persona);
@@ -256,52 +267,145 @@ export async function registerRoutes(
     }
   });
 
-  // Deepfake
   app.get(api.deepfake.list.path, async (req, res) => {
-    const scans = await storage.getDeepfakeScans();
-    res.json(scans);
+    res.json(await storage.getDeepfakeScans());
   });
 
   app.post(api.deepfake.scan.path, async (req, res) => {
     try {
       const input = api.deepfake.scan.input.parse(req.body);
-      const scan = await storage.createDeepfakeScan({
-        mediaUrl: input.mediaUrl,
-        status: "pending"
-      });
-
-      await storage.createAuditLog({
-        action: "Initiate Deepfake Scan",
-        details: `Media: ${input.mediaUrl}`
-      });
-
+      const scan = await processDeepfakeScan(input.mediaUrl, input.mediaType, input.subjectName);
+      await checkAndEscalateAlerts();
       res.status(201).json(scan);
     } catch (err) {
       if (err instanceof z.ZodError) {
-        return res.status(400).json({
-          message: err.errors[0].message,
-          field: err.errors[0].path.join('.'),
-        });
+        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
       }
       throw err;
     }
   });
 
-  // Risk
+  app.get(api.deepfake.stats.path, async (req, res) => {
+    const scans = await storage.getDeepfakeScans();
+    const profiles = await storage.getDeepfakeExposureProfiles();
+    res.json(getDeepfakeStats(scans, profiles));
+  });
+
+  app.get(api.deepfake.exposure.list.path, async (req, res) => {
+    res.json(await storage.getDeepfakeExposureProfiles());
+  });
+
+  app.post(api.deepfake.exposure.create.path, async (req, res) => {
+    try {
+      const input = api.deepfake.exposure.create.input.parse(req.body);
+      const { score, level } = calculateExposureScore(input);
+      const profile = await storage.createDeepfakeExposureProfile({
+        subjectName: input.subjectName,
+        videoMinutes: input.videoMinutes,
+        audioScore: input.audioScore,
+        faceVisibilityScore: input.faceVisibilityScore,
+        imageAvailabilityScore: input.imageAvailabilityScore,
+        exposureScore: score,
+        exposureLevel: level,
+      });
+
+      if (level === "CRITICAL" || level === "HIGH") {
+        await storage.createAlert({
+          title: `Deepfake Exposure ${level}: ${input.subjectName}`,
+          description: `Subject "${input.subjectName}" has ${level} deepfake exposure risk (score: ${score}/100). Immediate protective measures recommended.`,
+          severity: level === "CRITICAL" ? "CRITICAL" : "HIGH",
+          alertType: "DEEPFAKE_EXPOSURE",
+          sourceModule: "DEEPFAKE_DEFENSE",
+          recommendedAction: "Reduce public media presence, implement watermarking, deploy voice authentication",
+          isRead: false,
+        });
+      }
+
+      await storage.createAuditLog({
+        action: "Deepfake Exposure Profile Created",
+        actionType: "CREATE",
+        actorType: "ANALYST",
+        user: "OPERATOR",
+        targetEntity: input.subjectName,
+        details: `Exposure Score: ${score}/100 | Level: ${level}`,
+      });
+
+      res.status(201).json(profile);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
+      }
+      throw err;
+    }
+  });
+
+  app.post(api.deepfake.mitigate.path, async (req, res) => {
+    try {
+      const input = api.deepfake.mitigate.input.parse(req.body);
+      const guidance = generateMitigationGuidanceDeterministic(input.exposureLevel, input.syntheticDetected || false);
+      res.json({ guidance });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
+      }
+      throw err;
+    }
+  });
+
   app.get(api.risk.scores.path, async (req, res) => {
-    const scores = await storage.getRiskScores();
-    res.json(scores);
+    res.json(await storage.getRiskScores());
   });
 
-  // Audit
   app.get(api.audit.list.path, async (req, res) => {
-    const logs = await storage.getAuditLogs();
-    res.json(logs);
+    res.json(await storage.getAuditLogs());
   });
 
-  // Seed Data function
-  await seedDatabase();
+  app.get(api.audit.search.path, async (req, res) => {
+    const { entity, action, actor } = req.query as Record<string, string>;
+    const results = await storage.searchAuditLogs({ entity, action, actor });
+    res.json(results);
+  });
 
+  app.get(api.reports.list.path, async (req, res) => {
+    res.json(await storage.getIncidentReports());
+  });
+
+  app.post(api.reports.generate.path, async (req, res) => {
+    try {
+      const input = api.reports.generate.input.parse(req.body);
+      const report = await generateIncidentReport(input.reportType, input.domain);
+      res.status(201).json(report);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
+      }
+      throw err;
+    }
+  });
+
+  app.get(api.system.health.path, async (req, res) => {
+    let dbStatus = "unknown";
+    try {
+      await storage.getAlerts();
+      dbStatus = "connected";
+    } catch {
+      dbStatus = "error";
+    }
+    const integrations = [];
+    if (process.env.HIBP_API_KEY) integrations.push("HIBP");
+    if (process.env.SHODAN_API_KEY) integrations.push("SHODAN");
+    if (process.env.GITHUB_TOKEN) integrations.push("GITHUB");
+    if (process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY) integrations.push("OPENAI");
+    res.json({
+      status: "operational",
+      uptime: Math.round((Date.now() - startTime) / 1000),
+      dbStatus,
+      timestamp: new Date().toISOString(),
+      activeIntegrations: integrations,
+    });
+  });
+
+  await seedDatabase();
   return httpServer;
 }
 
@@ -309,22 +413,26 @@ async function seedDatabase() {
   const existingAlerts = await storage.getAlerts();
   if (existingAlerts.length === 0) {
     console.log("Seeding database with military-grade intel...");
-    
-    // Alerts
+
     await storage.createAlert({
       title: "Suspicious Login Attempt",
       description: "Multiple failed logins from TOR exit node targeting command interface.",
-      severity: "High",
-      isRead: false
+      severity: "HIGH",
+      alertType: "AUTH_FAILURE",
+      sourceModule: "ACCESS_CONTROL",
+      recommendedAction: "Block source IP, review access logs, enable MFA",
+      isRead: false,
     });
     await storage.createAlert({
       title: "New CVE Published",
       description: "CVE-2024-XXXX affects edge router firmware. Patch recommended.",
-      severity: "Critical",
-      isRead: false
+      severity: "CRITICAL",
+      alertType: "VULNERABILITY",
+      sourceModule: "THREAT_INTEL",
+      recommendedAction: "Apply firmware patch immediately, audit affected systems",
+      isRead: false,
     });
-    
-    // Deception Assets
+
     await storage.createDeceptionAsset({
       tokenId: "NEM-SEED001",
       assetType: "ms_word",
@@ -350,30 +458,42 @@ async function seedDatabase() {
       triggerCount: 3,
     });
 
-    // Deepfake scans
     await storage.createDeepfakeScan({
       mediaUrl: "https://example.com/suspicious_video.mp4",
+      mediaType: "video",
       status: "completed",
       isDeepfake: true,
-      confidenceScore: 92
+      syntheticProbability: 91,
+      confidenceScore: 92,
+      riskLevel: "CRITICAL",
+      analysisSummary: "Synthetic video detected with high confidence. Facial manipulation indicators found.",
+      detectionTags: ["FACE_SWAP_DETECTED", "TEMPORAL_INCONSISTENCY", "GAN_FINGERPRINT_SCAN"],
     });
     await storage.createDeepfakeScan({
       mediaUrl: "https://example.com/press_release_audio.wav",
+      mediaType: "audio",
       status: "completed",
       isDeepfake: false,
-      confidenceScore: 14
+      syntheticProbability: 14,
+      confidenceScore: 87,
+      riskLevel: "LOW",
+      analysisSummary: "Media appears authentic. No significant manipulation indicators detected.",
+      detectionTags: ["WAVEFORM_ANALYSIS"],
     });
 
-    // Audit logs
     await storage.createAuditLog({
       action: "System Initialization",
+      actionType: "SYSTEM",
+      actorType: "SYSTEM",
       user: "SYSTEM_ADMIN",
-      details: "NEMESIS Core booted and connected to intelligence feeds."
+      details: "NEMESIS Core booted and connected to intelligence feeds.",
     });
     await storage.createAuditLog({
       action: "Threat Feed Sync",
+      actionType: "SYNC",
+      actorType: "SYSTEM",
       user: "SYSTEM",
-      details: "Successfully synced with HaveIBeenPwned and Shodan APIs."
+      details: "Successfully synced with HaveIBeenPwned and Shodan APIs.",
     });
   }
 }

@@ -7,11 +7,13 @@ import {
   insertBreachRecordSchema, breach_records,
   insertDeceptionAssetSchema, deception_assets,
   insertHoneyPersonaSchema, honey_personas,
+  insertDeepfakeExposureProfileSchema, deepfake_exposure_profiles,
   insertDeepfakeScanSchema, deepfake_scans,
   insertGithubExposureSchema, github_exposure,
   insertInfraExposureSchema, infrastructure_exposure,
   insertRiskScoreSchema, risk_scores,
-  insertAuditLogSchema, audit_logs
+  insertAuditLogSchema, audit_logs,
+  insertIncidentReportSchema, incident_reports
 } from './schema';
 
 export const errorSchemas = {
@@ -34,11 +36,13 @@ const attackScenarioSchema = z.custom<typeof attack_scenarios.$inferSelect>();
 const breachRecordSchema = z.custom<typeof breach_records.$inferSelect>();
 const deceptionAssetSchema = z.custom<typeof deception_assets.$inferSelect>();
 const honeyPersonaSchema = z.custom<typeof honey_personas.$inferSelect>();
+const deepfakeExposureProfileSchema = z.custom<typeof deepfake_exposure_profiles.$inferSelect>();
 const deepfakeScanSchema = z.custom<typeof deepfake_scans.$inferSelect>();
 const githubExposureSchema = z.custom<typeof github_exposure.$inferSelect>();
 const infraExposureSchema = z.custom<typeof infrastructure_exposure.$inferSelect>();
 const riskScoreSchema = z.custom<typeof risk_scores.$inferSelect>();
 const auditLogSchema = z.custom<typeof audit_logs.$inferSelect>();
+const incidentReportSchema = z.custom<typeof incident_reports.$inferSelect>();
 
 export const api = {
   dashboard: {
@@ -77,6 +81,13 @@ export const api = {
         200: z.array(alertSchema),
       }
     },
+    active: {
+      method: 'GET' as const,
+      path: '/api/alerts/active' as const,
+      responses: {
+        200: z.array(alertSchema),
+      }
+    },
     markRead: {
       method: 'PATCH' as const,
       path: '/api/alerts/:id/read' as const,
@@ -84,7 +95,16 @@ export const api = {
         200: alertSchema,
         404: errorSchemas.notFound,
       }
-    }
+    },
+    updateStatus: {
+      method: 'PATCH' as const,
+      path: '/api/alerts/:id/status' as const,
+      input: z.object({ status: z.enum(["OPEN", "ACKNOWLEDGED", "UNDER_REVIEW", "RESOLVED"]) }),
+      responses: {
+        200: alertSchema,
+        404: errorSchemas.notFound,
+      }
+    },
   },
   threats: {
     breaches: {
@@ -209,13 +229,55 @@ export const api = {
     },
     scan: {
       method: 'POST' as const,
-      path: '/api/deepfake' as const,
-      input: z.object({ mediaUrl: z.string() }),
+      path: '/api/deepfake/scan' as const,
+      input: z.object({
+        mediaUrl: z.string(),
+        mediaType: z.enum(["video", "audio", "image"]).optional(),
+        subjectName: z.string().optional(),
+      }),
       responses: {
         201: deepfakeScanSchema,
         400: errorSchemas.validation
       }
-    }
+    },
+    stats: {
+      method: 'GET' as const,
+      path: '/api/deepfake/stats' as const,
+      responses: { 200: z.any() }
+    },
+    exposure: {
+      list: {
+        method: 'GET' as const,
+        path: '/api/deepfake/exposure' as const,
+        responses: { 200: z.array(deepfakeExposureProfileSchema) }
+      },
+      create: {
+        method: 'POST' as const,
+        path: '/api/deepfake/exposure' as const,
+        input: z.object({
+          subjectName: z.string(),
+          videoMinutes: z.number().min(0).max(999),
+          audioScore: z.number().min(0).max(100),
+          faceVisibilityScore: z.number().min(0).max(100),
+          imageAvailabilityScore: z.number().min(0).max(100),
+        }),
+        responses: {
+          201: deepfakeExposureProfileSchema,
+          400: errorSchemas.validation
+        }
+      },
+    },
+    mitigate: {
+      method: 'POST' as const,
+      path: '/api/deepfake/mitigate' as const,
+      input: z.object({
+        exposureLevel: z.string(),
+        syntheticDetected: z.boolean().optional(),
+      }),
+      responses: {
+        200: z.object({ guidance: z.array(z.string()) }),
+      }
+    },
   },
   risk: {
     scores: {
@@ -229,8 +291,47 @@ export const api = {
       method: 'GET' as const,
       path: '/api/audit' as const,
       responses: { 200: z.array(auditLogSchema) }
-    }
-  }
+    },
+    search: {
+      method: 'GET' as const,
+      path: '/api/audit/search' as const,
+      responses: { 200: z.array(auditLogSchema) }
+    },
+  },
+  reports: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/reports' as const,
+      responses: { 200: z.array(incidentReportSchema) }
+    },
+    generate: {
+      method: 'POST' as const,
+      path: '/api/reports/generate' as const,
+      input: z.object({
+        reportType: z.enum(["EXPOSURE", "ACTIVE_TARGETING", "DEEPFAKE_INCIDENT", "EXECUTIVE_SUMMARY"]),
+        domain: z.string().optional(),
+      }),
+      responses: {
+        201: incidentReportSchema,
+        400: errorSchemas.validation
+      }
+    },
+  },
+  system: {
+    health: {
+      method: 'GET' as const,
+      path: '/api/system/health' as const,
+      responses: {
+        200: z.object({
+          status: z.string(),
+          uptime: z.number(),
+          dbStatus: z.string(),
+          timestamp: z.string(),
+          activeIntegrations: z.array(z.string()),
+        })
+      }
+    },
+  },
 };
 
 export function buildUrl(path: string, params?: Record<string, string | number>): string {

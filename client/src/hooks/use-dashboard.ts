@@ -7,7 +7,7 @@ export function useDashboardStats() {
     queryFn: async () => {
       const res = await fetch(api.dashboard.stats.path, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch dashboard stats");
-      return api.dashboard.stats.responses[200].parse(await res.json());
+      return await res.json();
     },
   });
 }
@@ -37,6 +37,17 @@ export function useAnalyzeTarget() {
       queryClient.invalidateQueries({ queryKey: [api.threats.github.path] });
       queryClient.invalidateQueries({ queryKey: [api.risk.scores.path] });
       queryClient.invalidateQueries({ queryKey: [api.audit.list.path] });
+    },
+  });
+}
+
+export function useSystemHealth() {
+  return useQuery({
+    queryKey: [api.system.health.path],
+    queryFn: async () => {
+      const res = await fetch(api.system.health.path, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch system health");
+      return await res.json();
     },
   });
 }

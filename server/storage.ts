@@ -1,16 +1,20 @@
 import { db } from "./db";
 import {
   domains, emails, breach_records, infrastructure_exposure, github_exposure,
-  attack_scenarios, deception_assets, honey_personas, deepfake_scans, alerts, risk_scores, audit_logs,
+  attack_scenarios, deception_assets, honey_personas, deepfake_exposure_profiles,
+  deepfake_scans, alerts, risk_scores, audit_logs, incident_reports,
   type Alert, type AttackScenario, type BreachRecord, type DeceptionAsset,
-  type HoneyPersona, type DeepfakeScan, type Domain, type Email, type GithubExposure,
-  type InfraExposure, type RiskScore, type AuditLog,
+  type HoneyPersona, type DeepfakeExposureProfile, type DeepfakeScan, type Domain,
+  type Email, type GithubExposure, type InfraExposure, type RiskScore, type AuditLog,
+  type IncidentReport,
   type InsertAlert, type InsertAttackScenario, type InsertBreachRecord,
   type InsertDeceptionAsset, type InsertHoneyPersona, type InsertDeepfakeScan, type InsertDomain,
   type InsertEmail, type InsertGithubExposure, type InsertInfraExposure,
-  type InsertRiskScore, type InsertAuditLog
+  type InsertRiskScore, type InsertAuditLog, type InsertDeepfakeExposureProfile,
+  type InsertIncidentReport
 } from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, desc, and, like, gte } from "drizzle-orm";
+import { createHash } from "crypto";
 
 type InsertBreachRecord = {
   emailId?: number | null;
@@ -69,11 +73,17 @@ export interface IStorage {
     totalRiskScore: number;
     exposedAssets: number;
     deceptionTokensTriggered: number;
+    deepfakeThreats: number;
+    activeTargeting: boolean;
   }>;
 
   getAlerts(): Promise<Alert[]>;
+  getActiveAlerts(): Promise<Alert[]>;
+  getAlertsByStatus(status: string): Promise<Alert[]>;
   createAlert(alert: InsertAlert): Promise<Alert>;
   markAlertRead(id: number): Promise<Alert>;
+  updateAlertStatus(id: number, status: string): Promise<Alert>;
+  getRecentAlerts(minutesAgo: number): Promise<Alert[]>;
 
   getBreachRecords(): Promise<BreachRecord[]>;
   createBreachRecord(record: InsertBreachRecord): Promise<BreachRecord>;
@@ -98,14 +108,22 @@ export interface IStorage {
 
   updateRiskScore(id: number, data: { overallScore: number; classification: string }): Promise<RiskScore>;
 
+  getDeepfakeExposureProfiles(): Promise<DeepfakeExposureProfile[]>;
+  createDeepfakeExposureProfile(profile: InsertDeepfakeExposureProfile): Promise<DeepfakeExposureProfile>;
+
   getDeepfakeScans(): Promise<DeepfakeScan[]>;
-  createDeepfakeScan(scan: InsertDeepfakeScan): Promise<DeepfakeScan>;
+  createDeepfakeScan(scan: any): Promise<DeepfakeScan>;
+  updateDeepfakeScan(id: number, data: Partial<DeepfakeScan>): Promise<DeepfakeScan>;
 
   getRiskScores(): Promise<RiskScore[]>;
   createRiskScore(score: InsertRiskScore): Promise<RiskScore>;
 
   getAuditLogs(): Promise<AuditLog[]>;
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
+  searchAuditLogs(filters: { entity?: string; action?: string; actor?: string }): Promise<AuditLog[]>;
+
+  getIncidentReports(): Promise<IncidentReport[]>;
+  createIncidentReport(report: InsertIncidentReport): Promise<IncidentReport>;
 
   createDomain(domain: InsertDomain): Promise<Domain>;
   getDomainByName(name: string): Promise<Domain | undefined>;
@@ -122,21 +140,36 @@ export class DatabaseStorage implements IStorage {
     
     const allInfra = await db.select().from(infrastructure_exposure);
     const triggeredTokens = await db.select().from(deception_assets).where(eq(deception_assets.triggered, true));
+    const dfScans = await db.select().from(deepfake_scans).where(eq(deepfake_scans.isDeepfake, true));
 
     return {
       activeAlerts: unreadAlerts.length,
       totalRiskScore: avgRiskScore,
       exposedAssets: allInfra.length,
-      deceptionTokensTriggered: triggeredTokens.length
+      deceptionTokensTriggered: triggeredTokens.length,
+      deepfakeThreats: dfScans.length,
+      activeTargeting: triggeredTokens.length > 0,
     };
   }
 
   async getAlerts() {
-    return await db.select().from(alerts);
+    return await db.select().from(alerts).orderBy(desc(alerts.createdAt));
+  }
+
+  async getActiveAlerts() {
+    return await db.select().from(alerts)
+      .where(and(eq(alerts.isRead, false)))
+      .orderBy(desc(alerts.createdAt));
+  }
+
+  async getAlertsByStatus(status: string) {
+    return await db.select().from(alerts)
+      .where(eq(alerts.status, status))
+      .orderBy(desc(alerts.createdAt));
   }
 
   async createAlert(alert: InsertAlert) {
-    const [newAlert] = await db.insert(alerts).values(alert).returning();
+    const [newAlert] = await db.insert(alerts).values(alert as any).returning();
     return newAlert;
   }
 
@@ -146,6 +179,21 @@ export class DatabaseStorage implements IStorage {
       .where(eq(alerts.id, id))
       .returning();
     return updatedAlert;
+  }
+
+  async updateAlertStatus(id: number, status: string) {
+    const [updated] = await db.update(alerts)
+      .set({ status, updatedAt: new Date(), isRead: status === "RESOLVED" })
+      .where(eq(alerts.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getRecentAlerts(minutesAgo: number) {
+    const cutoff = new Date(Date.now() - minutesAgo * 60 * 1000);
+    return await db.select().from(alerts)
+      .where(gte(alerts.createdAt, cutoff))
+      .orderBy(desc(alerts.createdAt));
   }
 
   async getBreachRecords() {
@@ -252,17 +300,34 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async getDeepfakeScans() {
-    return await db.select().from(deepfake_scans);
+  async getDeepfakeExposureProfiles() {
+    return await db.select().from(deepfake_exposure_profiles).orderBy(desc(deepfake_exposure_profiles.createdAt));
   }
 
-  async createDeepfakeScan(scan: InsertDeepfakeScan) {
-    const [newScan] = await db.insert(deepfake_scans).values(scan).returning();
+  async createDeepfakeExposureProfile(profile: InsertDeepfakeExposureProfile) {
+    const [newProfile] = await db.insert(deepfake_exposure_profiles).values(profile as any).returning();
+    return newProfile;
+  }
+
+  async getDeepfakeScans() {
+    return await db.select().from(deepfake_scans).orderBy(desc(deepfake_scans.createdAt));
+  }
+
+  async createDeepfakeScan(scan: any) {
+    const [newScan] = await db.insert(deepfake_scans).values(scan as any).returning();
     return newScan;
   }
 
+  async updateDeepfakeScan(id: number, data: Partial<DeepfakeScan>) {
+    const [updated] = await db.update(deepfake_scans)
+      .set(data as any)
+      .where(eq(deepfake_scans.id, id))
+      .returning();
+    return updated;
+  }
+
   async getRiskScores() {
-    return await db.select().from(risk_scores);
+    return await db.select().from(risk_scores).orderBy(desc(risk_scores.createdAt));
   }
 
   async createRiskScore(score: InsertRiskScore) {
@@ -271,12 +336,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAuditLogs() {
-    return await db.select().from(audit_logs);
+    return await db.select().from(audit_logs).orderBy(desc(audit_logs.createdAt));
   }
 
   async createAuditLog(log: InsertAuditLog) {
-    const [newLog] = await db.insert(audit_logs).values(log).returning();
+    const lastLogs = await db.select().from(audit_logs).orderBy(desc(audit_logs.id)).limit(1);
+    const prevHash = lastLogs.length > 0 ? (lastLogs[0].hashSignature || "") : "GENESIS";
+    const logData = JSON.stringify({ ...log, prevHash, timestamp: Date.now() });
+    const hashSignature = createHash("sha256").update(logData).digest("hex");
+    const [newLog] = await db.insert(audit_logs).values({ ...log, hashSignature } as any).returning();
     return newLog;
+  }
+
+  async searchAuditLogs(filters: { entity?: string; action?: string; actor?: string }) {
+    let query = db.select().from(audit_logs);
+    const conditions = [];
+    if (filters.entity) conditions.push(like(audit_logs.targetEntity, `%${filters.entity}%`));
+    if (filters.action) conditions.push(like(audit_logs.action, `%${filters.action}%`));
+    if (filters.actor) conditions.push(like(audit_logs.user, `%${filters.actor}%`));
+    if (conditions.length > 0) {
+      return await query.where(and(...conditions)).orderBy(desc(audit_logs.createdAt));
+    }
+    return await query.orderBy(desc(audit_logs.createdAt));
+  }
+
+  async getIncidentReports() {
+    return await db.select().from(incident_reports).orderBy(desc(incident_reports.createdAt));
+  }
+
+  async createIncidentReport(report: InsertIncidentReport) {
+    const [newReport] = await db.insert(incident_reports).values(report as any).returning();
+    return newReport;
   }
 
   async createDomain(domainInput: InsertDomain) {
