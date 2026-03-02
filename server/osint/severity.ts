@@ -21,6 +21,13 @@ export function classifyExposureLevel(score: number): string {
   return "LOW";
 }
 
+export function classifyAttackRisk(riskScore: number): string {
+  if (riskScore >= 60) return "CRITICAL";
+  if (riskScore >= 35) return "HIGH";
+  if (riskScore >= 15) return "MODERATE";
+  return "LOW";
+}
+
 export function portSeverity(port: number): SeverityLevel {
   const criticalPorts = [27017, 3306, 5432, 1433, 6379, 9200, 11211];
   const highPorts = [21, 23, 445, 135, 139, 3389, 5900];

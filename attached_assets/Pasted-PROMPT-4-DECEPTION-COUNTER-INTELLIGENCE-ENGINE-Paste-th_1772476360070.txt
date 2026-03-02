@@ -1,0 +1,258 @@
+PROMPT 4 — DECEPTION & COUNTER-INTELLIGENCE ENGINE
+
+Paste this as a standalone prompt into your AI website generator.
+
+🛡️ PROMPT: Build the Deception & Counter-Intelligence Engine for NEMESIS
+
+Act as a senior cyber deception strategist designing the proactive counter-intelligence module for a national-grade cyber defense platform called NEMESIS.
+
+This module must deploy controlled, legal, defensive deception mechanisms to detect hostile reconnaissance and active targeting before real compromise occurs.
+
+No illegal engagement.
+No hacking back.
+No interaction with criminal infrastructure.
+
+This is defensive deception only.
+
+🎯 OBJECTIVE
+
+Design a Deception Engine that:
+
+• Deploys monitored decoy assets
+• Detects unauthorized interaction
+• Correlates deception triggers with threat signals
+• Escalates active targeting alerts
+• Integrates with risk engine
+• Logs forensic evidence
+
+The system must integrate real services such as Canarytokens and secure webhooks.
+
+🧠 CORE CONCEPT
+
+Instead of waiting for attackers to strike real systems:
+
+We create controlled tripwires.
+
+If someone touches the decoy → early warning.
+
+🪤 MODULE 1 — HONEYTOKEN DEPLOYMENT SYSTEM
+
+Integrate with:
+
+https://canarytokens.org/
+
+The system must:
+
+• Generate honeytokens dynamically
+• Store token metadata
+• Store unique webhook endpoint
+• Track deployment location
+
+Supported token types:
+
+• AWS key token
+• Google Drive token
+• Microsoft Word document token
+• PDF document token
+• Generic URL token
+
+DEPLOYMENT PROCESS
+
+1️⃣ Admin selects token type
+2️⃣ System requests token from Canarytokens
+3️⃣ Store token_id, type, creation_date
+4️⃣ Generate internal tracking ID
+5️⃣ Provide placement guidance:
+
+Private repo
+
+Cloud config file
+
+Fake employee document
+
+Internal shared drive
+
+DATABASE TABLE
+
+deception_assets:
+
+• id (UUID)
+• token_id
+• token_type
+• placement_location
+• status (ACTIVE / TRIGGERED)
+• created_at
+• triggered_at
+• source_ip
+• geo_location
+• severity_level
+
+📡 MODULE 2 — WEBHOOK LISTENER
+
+Create secure backend endpoint:
+
+/webhook/canary
+
+When triggered:
+
+• Validate source
+• Parse token_id
+• Update deception_assets status
+• Record IP address
+• Record user agent
+• Record timestamp
+• Generate alert
+
+Must include:
+
+• Signature validation
+• IP filtering
+• Replay attack protection
+
+🚨 MODULE 3 — ACTIVE TARGETING DETECTION
+
+If honeytoken triggered:
+
+1️⃣ Increase domain risk score
+2️⃣ Flag Active Reconnaissance
+3️⃣ Trigger alert in dashboard
+4️⃣ Log forensic record
+
+Severity levels:
+
+• Single token trigger = HIGH
+• Multiple tokens triggered = CRITICAL
+
+🎭 MODULE 4 — HONEY PERSONA GENERATOR
+
+Create synthetic but controlled decoy identity profiles.
+
+Features:
+
+• Fake employee name
+• Fake job role
+• Fake email (non-operational)
+• Decoy LinkedIn-style profile (hosted internally)
+
+These personas must:
+
+• Not impersonate real individuals
+• Be clearly internal decoys
+• Be used for detection only
+
+Store in:
+
+honey_personas table:
+
+• id
+• name
+• role
+• decoy_email
+• deployment_context
+• status
+• created_at
+
+🔗 MODULE 5 — CORRELATION ENGINE
+
+Correlate:
+
+• Honeytoken triggers
+• Exposure score
+• Shodan findings
+• GitHub exposures
+
+If:
+
+Exposure HIGH + token triggered
+→ escalate to CRITICAL
+
+Generate structured alert:
+
+{
+"type": "ACTIVE_TARGETING",
+"domain": "",
+"trigger_source": "",
+"risk_level": "",
+"recommended_action": ""
+}
+
+🧾 MODULE 6 — FORENSIC LOGGING
+
+Every deception event must record:
+
+• Timestamp
+• Token ID
+• IP address
+• ASN
+• Geo-location
+• User agent
+• Risk classification
+
+Store in:
+
+audit_logs table
+
+Logs must be immutable.
+
+⚖ LEGAL & ETHICAL SAFEGUARDS
+
+The deception system must:
+
+• Never send exploit payloads
+• Never engage attacker systems
+• Never retaliate
+• Never perform counter-hacking
+
+This is detection only.
+
+Add compliance note:
+
+“All deception assets are inert detection mechanisms.”
+
+🛡️ RISK INTEGRATION
+
+Modify risk engine:
+
+If deception trigger detected:
+
+risk_score += 15
+
+Update:
+
+overall_risk_level recalculated
+
+📊 DASHBOARD INTEGRATION
+
+Add Deception Panel:
+
+• Active tokens count
+• Triggered tokens
+• Active targeting alert
+• Timeline view
+
+Visual style:
+
+Red pulse animation when triggered
+Alert sound option
+
+⚡ PERFORMANCE REQUIREMENTS
+
+• Webhook processing < 1 second
+• Support concurrent triggers
+• No blocking operations
+
+🧠 OUTPUT REQUIREMENTS
+
+Generate:
+
+• System flow diagram
+• Token lifecycle explanation
+• Webhook security model
+• Correlation logic diagram
+• Example trigger event JSON
+• Example alert JSON
+• Database schema
+
+Everything must be production-ready.
+
+No conceptual placeholders.

@@ -4,6 +4,8 @@ import { queryShodan } from "./shodan";
 import { queryGithub } from "./github";
 import { queryWhois } from "./whois";
 import { SEVERITY_VALUES, classifyExposureLevel, type SeverityLevel } from "./severity";
+import { simulateAttacks, type AttackSimulationResult } from "./attack-simulator";
+import { generatePlaybook } from "./playbook-generator";
 import { storage } from "../storage";
 
 export interface AnalysisResult {
@@ -60,7 +62,12 @@ export interface AnalysisResult {
   api_status: Record<string, { success: boolean; error?: string }>;
 }
 
-export async function analyzeDomain(rawDomain: string): Promise<AnalysisResult> {
+export interface FullAnalysisResult extends AnalysisResult {
+  attack_simulation: AttackSimulationResult | null;
+  playbook: any;
+}
+
+export async function analyzeDomain(rawDomain: string): Promise<FullAnalysisResult> {
   const domain = normalizeDomain(rawDomain);
 
   await storage.createAuditLog({
@@ -230,13 +237,7 @@ export async function analyzeDomain(rawDomain: string): Promise<AnalysisResult> 
     });
   }
 
-  await storage.createAuditLog({
-    action: "OSINT Analysis Complete",
-    user: "SYSTEM",
-    details: `Target: ${domain} | Score: ${totalScore} | Level: ${exposureLevel} | Breaches: ${hibp.breaches.length} | Infra: ${shodan.hosts.length} | GitHub: ${github.exposures.length}`,
-  });
-
-  return {
+  const analysisResult: AnalysisResult = {
     domain,
     breach_summary: {
       success: hibp.success,
@@ -288,5 +289,66 @@ export async function analyzeDomain(rawDomain: string): Promise<AnalysisResult> 
       github: { success: github.success, error: github.error },
       whois: { success: whois.success, error: whois.error },
     },
+  };
+
+  let attackSimulation: AttackSimulationResult | null = null;
+  let playbook: any = null;
+
+  try {
+    attackSimulation = simulateAttacks(analysisResult);
+
+    if (attackSimulation.attack_scenarios.length > 0 && domainId) {
+      await storage.deleteAttackScenariosByDomain(domainId);
+      for (const scenario of attackSimulation.attack_scenarios) {
+        await storage.createAttackScenario({
+          domainId,
+          title: scenario.title,
+          description: `${scenario.entryPoint} — ${scenario.attackCategory}`,
+          entryPoint: scenario.entryPoint,
+          attackCategory: scenario.attackCategory,
+          attackSteps: scenario.attackSteps,
+          requiredConditions: scenario.requiredConditions,
+          mitigationSteps: scenario.recommendedMitigations,
+          likelihoodScore: scenario.likelihoodScore,
+          impactScore: scenario.impactScore,
+          riskScore: scenario.riskScore,
+          severity: scenario.severity,
+          scenarioJson: scenario,
+        });
+      }
+
+      if (attackSimulation.overall_risk_score >= 30) {
+        await storage.createAlert({
+          title: `Critical Attack Path: ${domain}`,
+          description: `${attackSimulation.attack_scenarios.length} attack scenario(s) modeled. Highest risk: ${attackSimulation.highest_risk_scenario?.title || "Unknown"} (score: ${attackSimulation.highest_risk_scenario?.riskScore || 0}).`,
+          severity: "Critical",
+          isRead: false,
+        });
+      }
+    }
+
+    try {
+      playbook = await generatePlaybook(domain, attackSimulation);
+    } catch (pbErr: any) {
+      console.error("[Pipeline] Playbook generation failed:", pbErr.message);
+    }
+  } catch (simErr: any) {
+    console.error("[Pipeline] Attack simulation failed:", simErr.message);
+    await storage.createAuditLog({
+      action: "Attack Simulation Error",
+      details: `Failed for ${domain}: ${simErr.message}`,
+    });
+  }
+
+  await storage.createAuditLog({
+    action: "OSINT Analysis Complete",
+    user: "SYSTEM",
+    details: `Target: ${domain} | Score: ${totalScore} | Level: ${exposureLevel} | Breaches: ${hibp.breaches.length} | Infra: ${shodan.hosts.length} | GitHub: ${github.exposures.length} | Attack Scenarios: ${attackSimulation?.attack_scenarios.length || 0}`,
+  });
+
+  return {
+    ...analysisResult,
+    attack_simulation: attackSimulation,
+    playbook,
   };
 }

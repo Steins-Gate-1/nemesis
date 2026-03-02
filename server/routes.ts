@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import { api, errorSchemas } from "@shared/routes";
 import { z } from "zod";
 import { analyzeDomain } from "./osint/pipeline";
+import { simulateAttacks } from "./osint/attack-simulator";
+import { generatePlaybook } from "./osint/playbook-generator";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -91,6 +93,39 @@ export async function registerRoutes(
   app.get(api.threats.attackScenarios.path, async (req, res) => {
     const scenarios = await storage.getAttackScenarios();
     res.json(scenarios);
+  });
+
+  app.post(api.threats.simulateAttack.path, async (req, res) => {
+    try {
+      const input = api.threats.simulateAttack.input.parse(req.body);
+      const analysisResult = await analyzeDomain(input.domain);
+      const simulation = analysisResult.attack_simulation;
+      const playbook = analysisResult.playbook;
+
+      if (!simulation) {
+        return res.json({
+          attack_scenarios: [],
+          highest_risk_scenario: null,
+          overall_risk_score: 0,
+          overall_risk_level: "LOW",
+          risk_explanation: "No attack simulation data available.",
+          playbook: null,
+        });
+      }
+
+      res.json({
+        ...simulation,
+        playbook,
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
+      }
+      if (err instanceof Error) {
+        return res.status(400).json({ message: err.message, field: "domain" });
+      }
+      throw err;
+    }
   });
 
   // Deception

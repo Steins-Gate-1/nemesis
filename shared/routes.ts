@@ -104,6 +104,22 @@ export const api = {
       method: 'GET' as const,
       path: '/api/threats/scenarios' as const,
       responses: { 200: z.array(attackScenarioSchema) }
+    },
+    simulateAttack: {
+      method: 'POST' as const,
+      path: '/api/threats/simulate' as const,
+      input: z.object({ domain: z.string() }),
+      responses: {
+        200: z.object({
+          attack_scenarios: z.array(z.any()),
+          highest_risk_scenario: z.any().nullable(),
+          overall_risk_score: z.number(),
+          overall_risk_level: z.string(),
+          risk_explanation: z.string(),
+          playbook: z.any().nullable(),
+        }),
+        400: errorSchemas.validation,
+      }
     }
   },
   deception: {

@@ -38,6 +38,22 @@ type InsertGithubExposure = {
   severity: string;
 };
 
+type InsertAttackScenarioFull = {
+  domainId?: number | null;
+  title: string;
+  description: string;
+  entryPoint?: string | null;
+  attackCategory?: string | null;
+  attackSteps?: any;
+  requiredConditions?: any;
+  mitigationSteps?: any;
+  likelihoodScore?: number | null;
+  impactScore?: number | null;
+  riskScore?: number | null;
+  severity: string;
+  scenarioJson?: any;
+};
+
 type InsertRiskScore = {
   domainId?: number | null;
   exposureSeverity: number;
@@ -66,6 +82,9 @@ export interface IStorage {
   getGithubExposure(): Promise<GithubExposure[]>;
   createGithubExposure(exposure: InsertGithubExposure): Promise<GithubExposure>;
   getAttackScenarios(): Promise<AttackScenario[]>;
+  getAttackScenariosByDomain(domainId: number): Promise<AttackScenario[]>;
+  deleteAttackScenariosByDomain(domainId: number): Promise<void>;
+  createAttackScenario(scenario: InsertAttackScenarioFull): Promise<AttackScenario>;
 
   getDeceptionAssets(): Promise<DeceptionAsset[]>;
   createDeceptionAsset(asset: InsertDeceptionAsset): Promise<DeceptionAsset>;
@@ -149,6 +168,19 @@ export class DatabaseStorage implements IStorage {
 
   async getAttackScenarios() {
     return await db.select().from(attack_scenarios);
+  }
+
+  async getAttackScenariosByDomain(domainId: number) {
+    return await db.select().from(attack_scenarios).where(eq(attack_scenarios.domainId, domainId));
+  }
+
+  async deleteAttackScenariosByDomain(domainId: number) {
+    await db.delete(attack_scenarios).where(eq(attack_scenarios.domainId, domainId));
+  }
+
+  async createAttackScenario(scenario: InsertAttackScenarioFull) {
+    const [newScenario] = await db.insert(attack_scenarios).values(scenario as any).returning();
+    return newScenario;
   }
 
   async getDeceptionAssets() {

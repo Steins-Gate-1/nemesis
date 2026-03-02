@@ -50,10 +50,19 @@ export const github_exposure = pgTable("github_exposure", {
 
 export const attack_scenarios = pgTable("attack_scenarios", {
   id: serial("id").primaryKey(),
+  domainId: integer("domain_id").references(() => domains.id),
   title: text("title").notNull(),
   description: text("description").notNull(),
-  mitigationSteps: jsonb("mitigation_steps"), // Array of strings
+  entryPoint: text("entry_point"),
+  attackCategory: text("attack_category"),
+  attackSteps: jsonb("attack_steps"),
+  requiredConditions: jsonb("required_conditions"),
+  mitigationSteps: jsonb("mitigation_steps"),
+  likelihoodScore: integer("likelihood_score"),
+  impactScore: integer("impact_score"),
+  riskScore: integer("risk_score"),
   severity: text("severity").notNull(),
+  scenarioJson: jsonb("scenario_json"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "@shared/routes";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export function useBreaches() {
   return useQuery({
@@ -41,6 +42,20 @@ export function useAttackScenarios() {
       const res = await fetch(api.threats.attackScenarios.path, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch attack scenarios");
       return api.threats.attackScenarios.responses[200].parse(await res.json());
+    },
+  });
+}
+
+export function useSimulateAttack() {
+  return useMutation({
+    mutationFn: async (domain: string) => {
+      const res = await apiRequest("POST", api.threats.simulateAttack.path, { domain });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.threats.attackScenarios.path] });
+      queryClient.invalidateQueries({ queryKey: ['/api/alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
     },
   });
 }
