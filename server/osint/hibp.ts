@@ -10,6 +10,7 @@ export interface HIBPBreachResult {
   dataClasses: string[];
   severity: SeverityLevel;
   verified: boolean;
+  pwnCount: number;
 }
 
 export interface HIBPModuleResult {
@@ -17,19 +18,21 @@ export interface HIBPModuleResult {
   breaches: HIBPBreachResult[];
   error?: string;
   totalBreaches: number;
+  totalPwnedAccounts: number;
 }
 
 export async function queryHIBP(email: string): Promise<HIBPModuleResult> {
   const apiKey = process.env.HIBP_API_KEY;
-  if (!apiKey) {
-    return {
-      success: false,
-      breaches: [],
-      error: "HIBP_API_KEY not configured. Set it in environment variables to enable breach detection.",
-      totalBreaches: 0,
-    };
+
+  if (apiKey) {
+    return queryHIBPWithKey(email, apiKey);
   }
 
+  const domain = email.includes("@") ? email.split("@")[1] : email;
+  return queryHIBPFree(domain);
+}
+
+async function queryHIBPWithKey(email: string, apiKey: string): Promise<HIBPModuleResult> {
   try {
     const response = await retryFetch(
       `https://haveibeenpwned.com/api/v3/breachedaccount/${encodeURIComponent(email)}?truncateResponse=false`,
@@ -43,7 +46,7 @@ export async function queryHIBP(email: string): Promise<HIBPModuleResult> {
     );
 
     if (response.status === 404) {
-      return { success: true, breaches: [], totalBreaches: 0 };
+      return { success: true, breaches: [], totalBreaches: 0, totalPwnedAccounts: 0 };
     }
 
     if (!response.ok) {
@@ -53,11 +56,87 @@ export async function queryHIBP(email: string): Promise<HIBPModuleResult> {
         breaches: [],
         error: `HIBP API returned ${response.status}: ${errorText}`,
         totalBreaches: 0,
+        totalPwnedAccounts: 0,
       };
     }
 
     const data = await response.json();
-    const breaches: HIBPBreachResult[] = (data as any[]).map((breach) => ({
+    return parseBreachData(data as any[]);
+  } catch (err: any) {
+    return {
+      success: false,
+      breaches: [],
+      error: `HIBP query failed: ${err.message}`,
+      totalBreaches: 0,
+      totalPwnedAccounts: 0,
+    };
+  }
+}
+
+async function queryHIBPFree(domain: string): Promise<HIBPModuleResult> {
+  try {
+    const response = await retryFetch(
+      `https://haveibeenpwned.com/api/v3/breaches?domain=${encodeURIComponent(domain)}`,
+      {
+        headers: { "user-agent": "NEMESIS-CyberDefense" },
+        timeout: 10000,
+      }
+    );
+
+    if (response.status === 404) {
+      return { success: true, breaches: [], totalBreaches: 0, totalPwnedAccounts: 0 };
+    }
+
+    if (!response.ok) {
+      const allBreachesRes = await retryFetch(
+        `https://haveibeenpwned.com/api/v3/breaches`,
+        {
+          headers: { "user-agent": "NEMESIS-CyberDefense" },
+          timeout: 10000,
+        }
+      );
+
+      if (!allBreachesRes.ok) {
+        return {
+          success: false,
+          breaches: [],
+          error: `HIBP free API returned ${response.status}. No API key configured for email-level lookups.`,
+          totalBreaches: 0,
+          totalPwnedAccounts: 0,
+        };
+      }
+
+      const allBreaches: any[] = await allBreachesRes.json();
+      const domainBreaches = allBreaches.filter(
+        (b: any) => b.Domain && b.Domain.toLowerCase().includes(domain.toLowerCase())
+      );
+
+      if (domainBreaches.length === 0) {
+        return { success: true, breaches: [], totalBreaches: 0, totalPwnedAccounts: 0 };
+      }
+
+      return parseBreachData(domainBreaches);
+    }
+
+    const data = await response.json();
+    return parseBreachData(data as any[]);
+  } catch (err: any) {
+    return {
+      success: false,
+      breaches: [],
+      error: `HIBP free query failed: ${err.message}`,
+      totalBreaches: 0,
+      totalPwnedAccounts: 0,
+    };
+  }
+}
+
+function parseBreachData(data: any[]): HIBPModuleResult {
+  let totalPwnedAccounts = 0;
+  const breaches: HIBPBreachResult[] = data.map((breach) => {
+    const pwnCount = breach.PwnCount || 0;
+    totalPwnedAccounts += pwnCount;
+    return {
       title: breach.Name || breach.Title || "Unknown",
       domain: breach.Domain || "",
       breachDate: breach.BreachDate || "",
@@ -65,21 +144,16 @@ export async function queryHIBP(email: string): Promise<HIBPModuleResult> {
       dataClasses: breach.DataClasses || [],
       severity: breachSeverity(breach.DataClasses || []),
       verified: breach.IsVerified ?? false,
-    }));
+      pwnCount,
+    };
+  });
 
-    return {
-      success: true,
-      breaches,
-      totalBreaches: breaches.length,
-    };
-  } catch (err: any) {
-    return {
-      success: false,
-      breaches: [],
-      error: `HIBP query failed: ${err.message}`,
-      totalBreaches: 0,
-    };
-  }
+  return {
+    success: true,
+    breaches,
+    totalBreaches: breaches.length,
+    totalPwnedAccounts,
+  };
 }
 
 export async function storeBreachResults(

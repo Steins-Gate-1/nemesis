@@ -1,0 +1,27 @@
+GitHub token:
+
+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
+
+
+
+
+SHODAN API KEY:
+
+OpZh1XRiMLT91OuozoV2lSugMIp7OrQj
+
+
+
+
+And alternative to HIBP is: the Pwned Passwords API is entirely free to use and does not require an API key, subscription, or impose a rate limit. This is a core part of its design, enabling widespread use to improve internet security. 
+Key Features of the Free API
+* No Authentication: Unlike other parts of the Have I Been Pwned API (which require a paid subscription and key for searching by email address), the Pwned Passwords service is freely accessible without authorization.
+* Privacy-Preserving: The API uses a k-Anonymity model, so you only send the first 5 characters of a password's SHA-1 hash. The server then returns all compromised hashes matching that prefix, and you check the remainder of the hash locally, ensuring the full password or hash is never sent over the network.
+* No Rate Limits: There are no rate limits, licensing, or attribution requirements associated with using the Pwned Passwords API, making it easy to integrate into your applications or workflows.
+* Up-to-date Data: The service is continuously updated with new passwords found in data breaches, including feeds from law enforcement agencies like the FBI and NCA. 
+How to Get Started
+You can start using the API by following these general steps:
+1. Hash the password: Use SHA-1 to hash the password you want to check.
+2. Send the prefix: Make a GET request to the API with the first 5 characters of the hash. For example, https://api.pwnedpasswords.com{SHA1_PREFIX}.
+3. Check locally: The API returns a list of hash suffixes and their breach counts. Check this returned list for the full hash's suffix locally on your system.
+4. Advise users: If a match is found, you can advise the user to choose a different, uncompromised password. 
+You can also download the entire database of password hashes to query offline if needed. Various libraries and tools are available in different programming languages (like Python) to help integrate this functionality into your projects. 

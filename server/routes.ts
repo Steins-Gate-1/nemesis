@@ -11,6 +11,8 @@ import { processDeepfakeScan, calculateExposureScore, generateMitigationGuidance
 import { checkAndEscalateAlerts, isValidTransition } from "./alerts/engine";
 import { generateIncidentReport } from "./reports/generator";
 import { correlate } from "./correlation/engine";
+import { checkPwnedPassword } from "./osint/pwned-passwords";
+import { queryHIBP } from "./osint/hibp";
 
 const startTime = Date.now();
 
@@ -389,35 +391,91 @@ export async function registerRoutes(
       const input = api.externalIntel.analyze.input.parse(req.body);
       const ngrokBase = process.env.NGROK_BASE_URL;
       const ngrokKey = process.env.NGROK_API_KEY;
-      if (!ngrokBase || !ngrokKey) {
-        return res.status(500).json({ message: "External intelligence backend not configured" });
-      }
 
       const headers: Record<string, string> = { "ngrok-skip-browser-warning": "true" };
 
-      async function safeFetch(url: string): Promise<any> {
+      async function safeFetchNgrok(url: string): Promise<any> {
+        if (!ngrokBase || !ngrokKey) return null;
         try {
-          const response = await fetch(url, { headers, signal: AbortSignal.timeout(15000) });
-          if (!response.ok) {
-            return { error: `Upstream returned ${response.status}`, risk_level: "UNKNOWN" };
-          }
+          const response = await fetch(url, { headers, signal: AbortSignal.timeout(10000) });
+          if (!response.ok) return null;
           const text = await response.text();
-          try {
-            return JSON.parse(text);
-          } catch {
-            return { error: "Invalid response from upstream", risk_level: "UNKNOWN" };
-          }
-        } catch (err: any) {
-          return { error: err.message || "Connection failed", risk_level: "UNKNOWN" };
-        }
+          try { return JSON.parse(text); } catch { return null; }
+        } catch { return null; }
       }
 
-      const [darkWebData, passwordData] = await Promise.all([
-        safeFetch(`${ngrokBase}/scan?key=${encodeURIComponent(ngrokKey)}&target=${encodeURIComponent(input.target)}`),
+      const [ngrokDarkWeb, ngrokPassword] = await Promise.all([
+        safeFetchNgrok(`${ngrokBase}/scan?key=${encodeURIComponent(ngrokKey || "")}&target=${encodeURIComponent(input.target)}`),
         input.password
-          ? safeFetch(`${ngrokBase}/password-check?key=${encodeURIComponent(ngrokKey)}&password=${encodeURIComponent(input.password)}`)
+          ? safeFetchNgrok(`${ngrokBase}/password-check?key=${encodeURIComponent(ngrokKey || "")}&password=${encodeURIComponent(input.password)}`)
           : Promise.resolve(null),
       ]);
+
+      const [hibpResult, pwnedResult] = await Promise.all([
+        queryHIBP(`info@${input.target}`),
+        input.password ? checkPwnedPassword(input.password) : Promise.resolve(null),
+      ]);
+
+      let darkWebData: any;
+      if (ngrokDarkWeb && !ngrokDarkWeb.error) {
+        darkWebData = ngrokDarkWeb;
+      } else {
+        const breachCount = hibpResult.totalBreaches;
+        const totalPwned = hibpResult.totalPwnedAccounts || 0;
+        let riskLevel = "LOW";
+        let riskScore = 0;
+        if (breachCount >= 5 || totalPwned >= 1000000) { riskLevel = "CRITICAL"; riskScore = 85; }
+        else if (breachCount >= 3 || totalPwned >= 100000) { riskLevel = "HIGH"; riskScore = 65; }
+        else if (breachCount >= 1) { riskLevel = "MODERATE"; riskScore = 35; }
+        else { riskLevel = "LOW"; riskScore = 5; }
+
+        const keywordsFound: Record<string, any> = {};
+        for (const b of hibpResult.breaches) {
+          for (const dc of b.dataClasses) {
+            const key = dc.toLowerCase();
+            if (key.includes("password")) keywordsFound["passwords"] = true;
+            if (key.includes("email")) keywordsFound["email_addresses"] = true;
+            if (key.includes("credit") || key.includes("payment")) keywordsFound["financial_data"] = true;
+            if (key.includes("phone")) keywordsFound["phone_numbers"] = true;
+            if (key.includes("ip") || key.includes("address")) keywordsFound["ip_addresses"] = true;
+          }
+        }
+
+        darkWebData = {
+          source: "HIBP_FREE_API",
+          risk_level: riskLevel,
+          risk_score: riskScore,
+          domain_mentions: breachCount,
+          total_pwned_accounts: totalPwned,
+          keywords_found: keywordsFound,
+          breaches: hibpResult.breaches.map(b => ({
+            name: b.title,
+            domain: b.domain,
+            date: b.breachDate,
+            severity: b.severity,
+            pwn_count: b.pwnCount,
+            data_classes: b.dataClasses,
+            verified: b.verified,
+          })),
+          api_note: hibpResult.error || (hibpResult.success ? "Real breach data from HaveIBeenPwned API" : "HIBP query failed"),
+        };
+      }
+
+      let passwordData: any;
+      if (ngrokPassword && !ngrokPassword.error) {
+        passwordData = ngrokPassword;
+      } else if (pwnedResult) {
+        passwordData = {
+          source: "PWNED_PASSWORDS_API",
+          risk_level: pwnedResult.risk_level,
+          compromised: pwnedResult.compromised,
+          exposure_count: pwnedResult.occurrences,
+          breach_count: pwnedResult.occurrences,
+          api_note: "Real data from HaveIBeenPwned Pwned Passwords API (k-Anonymity model)",
+        };
+      } else {
+        passwordData = null;
+      }
 
       const dwSignal = {
         risk_level: darkWebData?.risk_level || darkWebData?.dark_web_risk_level || "LOW",

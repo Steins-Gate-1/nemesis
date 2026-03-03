@@ -46,3 +46,5 @@ integrations = ["javascript_openai_ai_integrations:2.0.0"]
 [userenv.shared]
 NGROK_API_KEY = "nemesis_super_secure_key_9823"
 NGROK_BASE_URL = "https://subaural-paulita-prehensible.ngrok-free.dev"
+GITHUB_TOKEN = "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"
+SHODAN_API_KEY = "OpZh1XRiMLT91OuozoV2lSugMIp7OrQj"
