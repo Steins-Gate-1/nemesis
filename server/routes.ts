@@ -383,6 +383,92 @@ export async function registerRoutes(
     }
   });
 
+  app.post(api.externalIntel.analyze.path, async (req, res) => {
+    try {
+      const input = api.externalIntel.analyze.input.parse(req.body);
+      const ngrokBase = process.env.NGROK_BASE_URL;
+      const ngrokKey = process.env.NGROK_API_KEY;
+      if (!ngrokBase || !ngrokKey) {
+        return res.status(500).json({ message: "External intelligence backend not configured" });
+      }
+
+      const headers: Record<string, string> = { "ngrok-skip-browser-warning": "true" };
+
+      async function safeFetch(url: string): Promise<any> {
+        try {
+          const response = await fetch(url, { headers, signal: AbortSignal.timeout(15000) });
+          if (!response.ok) {
+            return { error: `Upstream returned ${response.status}`, risk_level: "UNKNOWN" };
+          }
+          const text = await response.text();
+          try {
+            return JSON.parse(text);
+          } catch {
+            return { error: "Invalid response from upstream", risk_level: "UNKNOWN" };
+          }
+        } catch (err: any) {
+          return { error: err.message || "Connection failed", risk_level: "UNKNOWN" };
+        }
+      }
+
+      const [darkWebData, passwordData] = await Promise.all([
+        safeFetch(`${ngrokBase}/scan?key=${encodeURIComponent(ngrokKey)}&target=${encodeURIComponent(input.target)}`),
+        input.password
+          ? safeFetch(`${ngrokBase}/password-check?key=${encodeURIComponent(ngrokKey)}&password=${encodeURIComponent(input.password)}`)
+          : Promise.resolve(null),
+      ]);
+
+      let combinedScore = 0;
+      const dwRisk = (darkWebData?.risk_level || darkWebData?.dark_web_risk_level || "").toUpperCase();
+      if (dwRisk === "HIGH" || dwRisk === "CRITICAL") combinedScore += 30;
+      else if (dwRisk === "MODERATE") combinedScore += 15;
+
+      const pwRisk = (passwordData?.risk_level || passwordData?.password_risk_level || "").toUpperCase();
+      if (pwRisk === "CRITICAL") combinedScore += 40;
+      else if (pwRisk === "HIGH") combinedScore += 25;
+      else if (pwRisk === "MODERATE") combinedScore += 10;
+
+      let combinedRiskLevel = "LOW";
+      if (combinedScore >= 50) combinedRiskLevel = "CRITICAL";
+      else if (combinedScore >= 30) combinedRiskLevel = "HIGH";
+      else if (combinedScore >= 15) combinedRiskLevel = "MODERATE";
+
+      await storage.createAuditLog({
+        action: "External Intel Analysis",
+        actionType: "SCAN",
+        actorType: "ANALYST",
+        user: "OPERATOR",
+        targetEntity: input.target,
+        details: `Target: ${input.target} | Dark Web: ${dwRisk || "N/A"} | Password: ${pwRisk || "N/A"} | Combined: ${combinedRiskLevel} (${combinedScore})`,
+      });
+
+      if (combinedRiskLevel === "CRITICAL" || combinedRiskLevel === "HIGH") {
+        await storage.createAlert({
+          title: `External Intel: ${combinedRiskLevel} threat for ${input.target}`,
+          description: `Combined threat score ${combinedScore}. Dark web: ${dwRisk}. Password: ${pwRisk}.`,
+          severity: combinedRiskLevel,
+          alertType: "EXTERNAL_INTEL",
+          sourceModule: "NGROK_BACKEND",
+          recommendedAction: "Review dark web exposure and rotate compromised credentials immediately.",
+          isRead: false,
+        });
+      }
+
+      res.json({
+        dark_web_risk: darkWebData,
+        password_risk: passwordData,
+        combined_score: combinedScore,
+        combined_risk_level: combinedRiskLevel,
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
+      }
+      console.error("External intel analysis error:", err);
+      res.status(500).json({ message: "External intelligence analysis failed" });
+    }
+  });
+
   app.get(api.system.health.path, async (req, res) => {
     let dbStatus = "unknown";
     try {

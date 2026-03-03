@@ -317,6 +317,26 @@ export const api = {
       }
     },
   },
+  externalIntel: {
+    analyze: {
+      method: 'POST' as const,
+      path: '/api/analyze' as const,
+      input: z.object({
+        target: z.string().min(1),
+        password: z.string().optional(),
+      }),
+      responses: {
+        200: z.object({
+          dark_web_risk: z.any(),
+          password_risk: z.any(),
+          combined_score: z.number(),
+          combined_risk_level: z.string(),
+        }),
+        400: errorSchemas.validation,
+        500: errorSchemas.internal,
+      }
+    },
+  },
   system: {
     health: {
       method: 'GET' as const,

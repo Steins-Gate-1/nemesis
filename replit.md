@@ -83,7 +83,15 @@ Dark, cinematic UI with matte black/navy gradients, neon red/cyan highlights, te
 - `audit_logs` - Immutable audit trail with SHA-256 hash chaining, actorType, actionType, targetEntity, rawEventData
 - `incident_reports` - Generated reports (4 types) with executive summary, technical details, risk level
 
+### External Intelligence Proxy (ngrok Flask Backend)
+- `POST /api/analyze` - Proxies to external Flask backend via ngrok tunnel
+  - Calls `/scan` for dark web intelligence and `/password-check` for password exposure
+  - Computes combined threat score using weighted risk mapping
+  - API key stored server-side in NGROK_API_KEY env var (never exposed to frontend)
+  - Graceful degradation when ngrok tunnel is unavailable
+
 ### API Routes
+- `POST /api/analyze` - External intelligence analysis (dark web + password)
 - `POST /api/scans/analyze` - OSINT analysis + attack simulation
 - `POST /api/threats/simulate` - Run full attack simulation
 - `POST /api/deepfake/scan` - Deepfake media scan pipeline

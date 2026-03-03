@@ -12,6 +12,7 @@ import Deception from "./pages/deception";
 import Deepfake from "./pages/deepfake";
 import Risk from "./pages/risk";
 import Audit from "./pages/audit";
+import ExternalIntel from "./pages/external-intel";
 
 function Router() {
   return (
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/deepfake" component={Deepfake}/>
       <Route path="/risk" component={Risk}/>
       <Route path="/audit" component={Audit}/>
+      <Route path="/external-intel" component={ExternalIntel}/>
       <Route component={NotFound} />
     </Switch>
   );

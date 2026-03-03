@@ -6,6 +6,7 @@ import {
   Eye, 
   Fingerprint, 
   FileTerminal,
+  Globe,
   Menu,
   X
 } from "lucide-react";
@@ -15,6 +16,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const navItems = [
   { href: "/", label: "COMMAND CENTER", icon: Activity },
   { href: "/threats", label: "THREAT INTEL", icon: Crosshair },
+  { href: "/external-intel", label: "EXTERNAL INTEL", icon: Globe },
   { href: "/deception", label: "DECEPTION GRID", icon: Eye },
   { href: "/deepfake", label: "MEDIA FORENSICS", icon: Fingerprint },
   { href: "/risk", label: "RISK POSTURE", icon: ShieldAlert },

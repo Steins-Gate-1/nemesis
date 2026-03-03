@@ -40,3 +40,9 @@ waitForPort = 5000
 
 [agent]
 integrations = ["javascript_openai_ai_integrations:2.0.0"]
+
+[userenv]
+
+[userenv.shared]
+NGROK_API_KEY = "nemesis_super_secure_key_9823"
+NGROK_BASE_URL = "https://subaural-paulita-prehensible.ngrok-free.dev"
