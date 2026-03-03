@@ -331,9 +331,46 @@ export const api = {
           password_risk: z.any(),
           combined_score: z.number(),
           combined_risk_level: z.string(),
+          individual_signals: z.any(),
+          weighted_scores: z.any(),
+          correlation_triggers: z.array(z.any()),
+          attack_probability_percentage: z.number(),
+          explainability_report: z.string(),
         }),
         400: errorSchemas.validation,
         500: errorSchemas.internal,
+      }
+    },
+    correlate: {
+      method: 'POST' as const,
+      path: '/api/correlate' as const,
+      input: z.object({
+        dark_web: z.object({
+          risk_level: z.string(),
+          risk_score: z.number().optional(),
+          domain_mentions: z.number().optional(),
+          keywords_found: z.record(z.any()).optional(),
+        }).optional(),
+        credentials: z.object({
+          exposure_count: z.number().optional(),
+          risk_level: z.string(),
+        }).optional(),
+        additional_signals: z.record(z.object({
+          score: z.number(),
+          risk_level: z.string(),
+        })).optional(),
+      }),
+      responses: {
+        200: z.object({
+          individual_signals: z.any(),
+          weighted_scores: z.any(),
+          correlation_triggers: z.array(z.any()),
+          combined_score: z.number(),
+          combined_risk_level: z.string(),
+          attack_probability_percentage: z.number(),
+          explainability_report: z.string(),
+        }),
+        400: errorSchemas.validation,
       }
     },
   },

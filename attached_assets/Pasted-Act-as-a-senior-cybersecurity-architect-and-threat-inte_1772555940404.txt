@@ -1,0 +1,186 @@
+Act as a senior cybersecurity architect and threat intelligence engineer.
+
+You are designing the CORRELATION ENGINE for a national-level cyber defense platform called NEMESIS.
+
+This is NOT a basic aggregation layer.
+This must model real-world attack chaining logic used in Security Operations Centers (SOC).
+
+The system already has the following independent signal modules:
+
+1) Dark Web Intelligence Module
+   - Returns:
+     {
+       risk_level: "LOW | MODERATE | HIGH | CRITICAL",
+       risk_score: number (0-100),
+       domain_mentions: number,
+       keywords_found: object
+     }
+
+2) Credential Exposure Intelligence Module
+   - Returns:
+     {
+       exposure_count: number,
+       risk_level: "SAFE | MODERATE | HIGH | CRITICAL"
+     }
+
+The Correlation Engine must:
+
+---------------------------------------
+CORE OBJECTIVE
+---------------------------------------
+
+Combine independent signals into a unified, explainable, attack probability model.
+
+This engine must:
+
+- Assign base weights to each signal
+- Apply conditional escalation rules
+- Model attack chaining logic
+- Compute combined threat score (0–100)
+- Classify overall risk
+- Provide explainable reasoning
+- Be modular and extensible
+
+---------------------------------------
+ARCHITECTURE REQUIREMENTS
+---------------------------------------
+
+Build a backend module (Node.js / Express preferred) with:
+
+Route:
+POST /analyze
+
+Input JSON:
+{
+  "dark_web": { ... },
+  "credentials": { ... }
+}
+
+Output JSON:
+{
+  "individual_signals": {...},
+  "weighted_scores": {...},
+  "correlation_triggers": [...],
+  "combined_score": number,
+  "combined_risk_level": "LOW | MODERATE | HIGH | CRITICAL",
+  "attack_probability_percentage": number,
+  "explainability_report": string
+}
+
+---------------------------------------
+SCORING MODEL
+---------------------------------------
+
+Base Weights:
+
+Dark Web:
+LOW = 5
+MODERATE = 15
+HIGH = 30
+CRITICAL = 50
+
+Credential Exposure:
+SAFE = 0
+MODERATE = 10
+HIGH = 25
+CRITICAL = 40
+
+---------------------------------------
+CONDITIONAL ESCALATION RULES
+---------------------------------------
+
+Rule 1:
+IF dark_web risk >= HIGH
+AND credential risk >= HIGH
+THEN add +25 escalation bonus
+Trigger: "Credential stuffing risk"
+
+Rule 2:
+IF dark_web keywords include "breach" OR "dump"
+AND exposure_count > 10000
+THEN add +20 escalation
+Trigger: "Active breach amplification"
+
+Rule 3:
+IF dark_web domain_mentions > 2
+THEN add +15 escalation
+Trigger: "Targeted reconnaissance pattern"
+
+Rule 4:
+If both modules are CRITICAL
+THEN override combined_risk_level = CRITICAL automatically
+
+---------------------------------------
+NORMALIZATION
+---------------------------------------
+
+Ensure combined_score never exceeds 100.
+
+Map combined_score to risk:
+
+0–20 → LOW
+21–45 → MODERATE
+46–75 → HIGH
+76–100 → CRITICAL
+
+---------------------------------------
+ATTACK PROBABILITY MODEL
+---------------------------------------
+
+Compute probability using weighted logic:
+
+probability = min(combined_score * 1.2, 100)
+
+---------------------------------------
+EXPLAINABILITY ENGINE
+---------------------------------------
+
+Generate a human-readable report:
+
+Example:
+
+"High dark web activity combined with significant credential exposure indicates elevated risk of credential stuffing or targeted exploitation. Multiple breach-related keywords increase likelihood of active threat actor monitoring."
+
+The explanation must:
+
+- Reference which rules triggered
+- Mention escalation logic
+- Be professional tone
+- Be SOC-grade language
+
+---------------------------------------
+ENGINEERING REQUIREMENTS
+---------------------------------------
+
+- Use clean modular functions
+- Separate scoring logic from routing logic
+- Include comments explaining reasoning
+- Handle missing signals gracefully
+- Ensure no API keys are exposed
+- Use async/await
+- Return structured JSON
+
+---------------------------------------
+BONUS (OPTIONAL IF POSSIBLE)
+---------------------------------------
+
+Design architecture to easily plug in future modules:
+- Open port exposure module
+- GitHub secret exposure module
+- Honeytoken trigger module
+
+Design correlation engine to scale to N signals.
+
+---------------------------------------
+DELIVERABLE
+---------------------------------------
+
+Provide complete working code for:
+
+- correlationEngine.js (modular scoring logic)
+- server route integration
+- Example request payload
+- Example response output
+- Clear explanation of how the logic works
+
+The system must reflect a national-level cyber intelligence platform, not a hackathon toy.

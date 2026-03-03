@@ -83,15 +83,25 @@ Dark, cinematic UI with matte black/navy gradients, neon red/cyan highlights, te
 - `audit_logs` - Immutable audit trail with SHA-256 hash chaining, actorType, actionType, targetEntity, rawEventData
 - `incident_reports` - Generated reports (4 types) with executive summary, technical details, risk level
 
-### External Intelligence Proxy (ngrok Flask Backend)
-- `POST /api/analyze` - Proxies to external Flask backend via ngrok tunnel
+### External Intelligence & Correlation Engine
+- `server/correlation/engine.ts` - SOC-grade signal correlation module:
+  - Base weights: Dark Web (LOW=5, MODERATE=15, HIGH=30, CRITICAL=50), Credentials (SAFE=0, MODERATE=10, HIGH=25, CRITICAL=40)
+  - 3 conditional escalation rules: ESC-001 Credential Stuffing (+25), ESC-002 Breach Amplification (+20), ESC-003 Reconnaissance Pattern (+15)
+  - Rule 4: Both CRITICAL → override to CRITICAL
+  - Attack probability: min(combined_score * 1.2, 100)
+  - SOC-grade explainability report generation
+  - Extensible: accepts additional_signals for future modules (port exposure, GitHub secrets, honeytoken triggers)
+- `POST /api/analyze` - Proxies to ngrok Flask backend then runs correlation engine
   - Calls `/scan` for dark web intelligence and `/password-check` for password exposure
-  - Computes combined threat score using weighted risk mapping
   - API key stored server-side in NGROK_API_KEY env var (never exposed to frontend)
+  - Creates alerts for HIGH/CRITICAL correlated threats
   - Graceful degradation when ngrok tunnel is unavailable
+- `POST /api/correlate` - Standalone correlation endpoint (accepts pre-formatted signals)
+- Frontend: `/external-intel` page with attack probability gauge, signal decomposition, escalation triggers, explainability report
 
 ### API Routes
-- `POST /api/analyze` - External intelligence analysis (dark web + password)
+- `POST /api/analyze` - External intelligence + correlation engine analysis
+- `POST /api/correlate` - Standalone correlation engine (dark_web + credentials + additional_signals)
 - `POST /api/scans/analyze` - OSINT analysis + attack simulation
 - `POST /api/threats/simulate` - Run full attack simulation
 - `POST /api/deepfake/scan` - Deepfake media scan pipeline

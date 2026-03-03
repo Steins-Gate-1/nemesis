@@ -10,6 +10,7 @@ import { deployHoneytoken, processWebhookTrigger, runCorrelation, generateHoneyP
 import { processDeepfakeScan, calculateExposureScore, generateMitigationGuidanceDeterministic, getDeepfakeStats } from "./deepfake/engine";
 import { checkAndEscalateAlerts, isValidTransition } from "./alerts/engine";
 import { generateIncidentReport } from "./reports/generator";
+import { correlate } from "./correlation/engine";
 
 const startTime = Date.now();
 
@@ -418,38 +419,37 @@ export async function registerRoutes(
           : Promise.resolve(null),
       ]);
 
-      let combinedScore = 0;
-      const dwRisk = (darkWebData?.risk_level || darkWebData?.dark_web_risk_level || "").toUpperCase();
-      if (dwRisk === "HIGH" || dwRisk === "CRITICAL") combinedScore += 30;
-      else if (dwRisk === "MODERATE") combinedScore += 15;
+      const dwSignal = {
+        risk_level: darkWebData?.risk_level || darkWebData?.dark_web_risk_level || "LOW",
+        risk_score: darkWebData?.risk_score ?? 0,
+        domain_mentions: darkWebData?.domain_mentions ?? darkWebData?.mentions ?? 0,
+        keywords_found: darkWebData?.keywords_found ?? {},
+      };
+      const credSignal = passwordData ? {
+        exposure_count: passwordData?.exposure_count ?? passwordData?.breach_count ?? 0,
+        risk_level: passwordData?.risk_level || passwordData?.password_risk_level || "LOW",
+      } : undefined;
 
-      const pwRisk = (passwordData?.risk_level || passwordData?.password_risk_level || "").toUpperCase();
-      if (pwRisk === "CRITICAL") combinedScore += 40;
-      else if (pwRisk === "HIGH") combinedScore += 25;
-      else if (pwRisk === "MODERATE") combinedScore += 10;
-
-      let combinedRiskLevel = "LOW";
-      if (combinedScore >= 50) combinedRiskLevel = "CRITICAL";
-      else if (combinedScore >= 30) combinedRiskLevel = "HIGH";
-      else if (combinedScore >= 15) combinedRiskLevel = "MODERATE";
+      const correlation = correlate(dwSignal, credSignal);
 
       await storage.createAuditLog({
         action: "External Intel Analysis",
-        actionType: "SCAN",
+        actionType: "CORRELATION",
         actorType: "ANALYST",
         user: "OPERATOR",
         targetEntity: input.target,
-        details: `Target: ${input.target} | Dark Web: ${dwRisk || "N/A"} | Password: ${pwRisk || "N/A"} | Combined: ${combinedRiskLevel} (${combinedScore})`,
+        details: `Target: ${input.target} | Score: ${correlation.combined_score}/100 | Risk: ${correlation.combined_risk_level} | Probability: ${correlation.attack_probability_percentage}% | Triggers: ${correlation.correlation_triggers.length}`,
+        rawEventData: correlation,
       });
 
-      if (combinedRiskLevel === "CRITICAL" || combinedRiskLevel === "HIGH") {
+      if (correlation.combined_risk_level === "CRITICAL" || correlation.combined_risk_level === "HIGH") {
         await storage.createAlert({
-          title: `External Intel: ${combinedRiskLevel} threat for ${input.target}`,
-          description: `Combined threat score ${combinedScore}. Dark web: ${dwRisk}. Password: ${pwRisk}.`,
-          severity: combinedRiskLevel,
-          alertType: "EXTERNAL_INTEL",
-          sourceModule: "NGROK_BACKEND",
-          recommendedAction: "Review dark web exposure and rotate compromised credentials immediately.",
+          title: `Correlated Threat: ${correlation.combined_risk_level} for ${input.target}`,
+          description: `Combined score ${correlation.combined_score}/100. Attack probability ${correlation.attack_probability_percentage}%. ${correlation.correlation_triggers.length} escalation rule(s) triggered.`,
+          severity: correlation.combined_risk_level,
+          alertType: "CORRELATION_ENGINE",
+          sourceModule: "CORRELATION",
+          recommendedAction: correlation.correlation_triggers.map(t => t.rule_name).join(", ") || "Review exposure and rotate credentials.",
           isRead: false,
         });
       }
@@ -457,8 +457,7 @@ export async function registerRoutes(
       res.json({
         dark_web_risk: darkWebData,
         password_risk: passwordData,
-        combined_score: combinedScore,
-        combined_risk_level: combinedRiskLevel,
+        ...correlation,
       });
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -466,6 +465,29 @@ export async function registerRoutes(
       }
       console.error("External intel analysis error:", err);
       res.status(500).json({ message: "External intelligence analysis failed" });
+    }
+  });
+
+  app.post(api.externalIntel.correlate.path, async (req, res) => {
+    try {
+      const input = api.externalIntel.correlate.input.parse(req.body);
+      const result = correlate(input.dark_web, input.credentials, input.additional_signals);
+
+      await storage.createAuditLog({
+        action: "Correlation Engine Analysis",
+        actionType: "CORRELATION",
+        actorType: "ANALYST",
+        user: "OPERATOR",
+        details: `Score: ${result.combined_score}/100 | Risk: ${result.combined_risk_level} | Probability: ${result.attack_probability_percentage}% | Triggers: ${result.correlation_triggers.length}`,
+        rawEventData: result,
+      });
+
+      res.json(result);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
+      }
+      throw err;
     }
   });
 
