@@ -11,6 +11,7 @@ const BANNER = `███╗   ██╗███████╗███╗   �
 
 const HELP_TEXT = `AVAILABLE COMMANDS:
   scan <domain>  - Analyze a target domain
+  urlscan <url>  - Scan URL against 651K threat database
   status         - System health status
   alerts         - Active security alerts
   threats        - Threat intelligence summary
@@ -221,6 +222,41 @@ export default function TerminalPage() {
               await typeResponse(output);
             } catch {
               await typeResponse(`Failed to lookup ${args}. Ensure valid CVE ID format.`, "error");
+            }
+            break;
+          }
+
+          case "urlscan": {
+            if (!args) {
+              await typeResponse("Usage: urlscan <url>\nExample: urlscan signin.eby.de.zukruygxctzmmqi.civpro.co.za", "error");
+              break;
+            }
+            try {
+              addLine(`Scanning URL against 651K+ threat database: ${args}...`, "system");
+              const res = await apiRequest("POST", "/api/url/scan", { url: args });
+              const data = await res.json();
+              const output = [
+                `URL THREAT ANALYSIS: ${data.url || args}`,
+                "═".repeat(55),
+                `Domain:      ${data.domain || "N/A"}`,
+                `Risk Score:  ${data.riskScore || 0}%`,
+                `Risk Level:  ${data.riskLevel || "UNKNOWN"}`,
+                `Threat Type: ${data.threatType || "NONE"}`,
+                `Confidence:  ${data.confidence || 0}%`,
+                "─".repeat(55),
+                `DATABASE MATCH: ${data.datasetMatch?.found ? "YES — " + data.datasetMatch.matchType?.toUpperCase() + " (" + data.datasetMatch.matchCount + " records)" : "NO MATCH"}`,
+                `CATEGORY:    ${data.datasetMatch?.threatCategory || "N/A"}`,
+                "─".repeat(55),
+                `PHISHING SCORE: ${data.phishingAnalysis?.score || 0}%`,
+                `ML VERDICT:  ${data.phishingAnalysis?.isPhishing ? "⚠ LIKELY PHISHING" : "✓ LEGITIMATE"}`,
+                "─".repeat(55),
+                "INDICATORS:",
+                ...(data.indicators || []).map((ind: string) => `  → ${ind}`),
+                "═".repeat(55),
+              ].join("\n");
+              await typeResponse(output);
+            } catch {
+              await typeResponse(`URL scan failed for ${args}.`, "error");
             }
             break;
           }

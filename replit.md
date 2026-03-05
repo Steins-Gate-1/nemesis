@@ -15,18 +15,19 @@ Dark, cinematic UI with matte black/navy gradients, neon red/cyan highlights, te
 - wouter for routing
 - TanStack Query for data fetching
 
-### Pages (11 total)
+### Pages (12 total)
 - `/` - Dashboard (3-zone Command Center): animated risk meter, 6 stat cards, OSINT scanner, active alerts with status management, intelligence timeline
 - `/threats` - Threat intelligence with Attack Simulation Engine, stored scenarios, breach/infra/github tabs
 - `/external-intel` - External Intelligence Analyzer with correlation engine, attack probability gauge
 - `/threat-map` - Global Threat Intelligence Map: SVG world map with geo-located threat indicators, pulsing dots, attack arcs, auto-refresh
 - `/attack-matrix` - MITRE ATT&CK Enterprise Matrix: 14-tactic interactive heatmap, technique coverage, radar chart, detail panel
 - `/topology` - Attack Surface Topology Graph: custom force-directed SVG graph, draggable nodes, domain→IP→port→CVE→breach connections
+- `/url-scanner` - URL Threat Intelligence Scanner: ML-powered phishing detection + 651K malicious URL database lookup, risk gauge, feature extraction, batch scanning
 - `/deception` - Deception & Counter-Intelligence Engine (6 modules)
 - `/deepfake` - Deepfake Warfare Defense Unit (4-tab: Scanner, Exposure Profiles, Scan History, Mitigation)
 - `/risk` - Risk scoring with radar chart, risk evolution line chart, alert frequency bar chart, report generation
 - `/audit` - Audit log timeline with search/filter, hash signature display, expandable JSON, report generation
-- `/terminal` - Operator Command Terminal: military CLI with ASCII art banner, 9 commands, typing animation, command history
+- `/terminal` - Operator Command Terminal: military CLI with ASCII art banner, 10 commands (incl. urlscan), typing animation, command history
 
 ### Backend (server/)
 - Express.js with Helmet security headers and rate limiting
@@ -59,6 +60,20 @@ Dark, cinematic UI with matte black/navy gradients, neon red/cyan highlights, te
 - 7 sections: Executive Summary, Threat Landscape, IOCs, Risk Matrix, MITRE Coverage, Recommended Actions, 72-Hour Outlook
 - Deterministic fallback when OpenAI unavailable
 - Classification: CLASSIFIED // NEMESIS SIGINT
+
+### URL Threat Intelligence Scanner (server/threat-intel/)
+- `url-scanner.ts` - Dual-dataset URL threat analysis engine:
+  - **Malicious URL Database**: Loads 651K URLs from Kaggle dataset (attached_assets/malicious_phish_1772725520710.csv), builds domain-level and exact-URL lookup maps. 223K threats: 94K phishing, 32K malware, 96K defacement
+  - **ML Phishing Feature Model**: 26-feature URL analysis model derived from 10K labeled phishing/legitimate dataset (attached_assets/Phishing_Legitimate_full_1772725518950.csv). Features: NumDots, SubdomainLevel, PathLevel, UrlLength, RandomString, IpAddress, SensitiveWords, EmbeddedBrandName, etc.
+  - `scanUrl(url)` → { riskScore, riskLevel, threatType, confidence, datasetMatch, phishingAnalysis, features, indicators }
+  - `batchScanUrls(urls)` → scan up to 50 URLs in parallel
+  - `getUrlScannerStats()` → dataset statistics (total threats, breakdown by type)
+  - `getTopThreatenedDomains()` → most-targeted domains from dataset
+  - `searchMaliciousUrls(query)` → search within malicious URL database
+  - Legitimate domain safelist prevents false positives on Google, Facebook, etc.
+  - Risk levels: SAFE <15, LOW 15-29, MODERATE 30-49, HIGH 50-74, CRITICAL 75+
+  - Creates alerts for HIGH/CRITICAL URL scan results
+  - Terminal command: `urlscan <url>` in operator terminal
 
 ### Attack Simulation Engine
 - Consumes normalized OSINT AnalysisResult data
@@ -122,6 +137,11 @@ Dark, cinematic UI with matte black/navy gradients, neon red/cyan highlights, te
 - `GET /api/mitre/matrix` - MITRE ATT&CK coverage mapping
 - `POST /api/briefing/generate` - AI threat intelligence briefing
 - `GET /api/threat-map/data` - Geo-located threat data for map
+- `POST /api/url/scan` - URL threat intelligence scan (single URL)
+- `POST /api/url/batch-scan` - Batch URL scan (up to 50 URLs)
+- `GET /api/url/stats` - URL scanner dataset statistics
+- `GET /api/url/top-threats` - Top threatened domains from dataset
+- `GET /api/url/search?q=` - Search malicious URL database
 - `POST /api/deepfake/scan` - Deepfake media scan pipeline
 - `GET /api/deepfake/stats` - Deepfake statistics
 - `POST /api/deepfake/exposure` - Create exposure profile

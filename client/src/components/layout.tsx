@@ -11,6 +11,7 @@ import {
   Grid3X3,
   Network,
   Terminal,
+  Link2,
   Menu,
   X
 } from "lucide-react";
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/threat-map", label: "THREAT MAP", icon: Map },
   { href: "/attack-matrix", label: "ATT&CK MATRIX", icon: Grid3X3 },
   { href: "/topology", label: "TOPOLOGY", icon: Network },
+  { href: "/url-scanner", label: "URL SCANNER", icon: Link2 },
   { href: "/deception", label: "DECEPTION GRID", icon: Eye },
   { href: "/deepfake", label: "MEDIA FORENSICS", icon: Fingerprint },
   { href: "/risk", label: "RISK POSTURE", icon: ShieldAlert },

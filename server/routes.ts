@@ -17,6 +17,7 @@ import { lookupCVE } from "./osint/cve";
 import { mapToMitre } from "./mitre/attack";
 import { generateThreatBriefing } from "./briefing/generator";
 import { getGeoThreatData } from "./osint/threat-geo";
+import { scanUrl, batchScanUrls, getUrlScannerStats, searchMaliciousUrls, getTopThreatenedDomains } from "./threat-intel/url-scanner";
 
 const startTime = Date.now();
 
@@ -594,6 +595,86 @@ export async function registerRoutes(
     try {
       const points = await getGeoThreatData();
       res.json(points);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/url/scan", async (req, res) => {
+    try {
+      const { url } = req.body;
+      if (!url || typeof url !== "string" || url.length > 2048) {
+        return res.status(400).json({ message: "Valid URL required (max 2048 chars)" });
+      }
+      const result = await scanUrl(url);
+
+      await storage.createAuditLog({
+        action: "URL Threat Scan",
+        actionType: "SCAN",
+        actorType: "OPERATOR",
+        user: "THREAT_INTEL",
+        targetEntity: url,
+        details: `Risk: ${result.riskLevel} (${result.riskScore}%), Type: ${result.threatType || "CLEAN"}`,
+      });
+
+      if (result.riskLevel === "CRITICAL" || result.riskLevel === "HIGH") {
+        await storage.createAlert({
+          title: `Malicious URL Detected: ${result.domain}`,
+          description: `URL threat scan identified ${result.threatType || "suspicious"} URL. Risk score: ${result.riskScore}%. Indicators: ${result.indicators.slice(0, 3).join("; ")}`,
+          severity: result.riskLevel === "CRITICAL" ? "CRITICAL" : "HIGH",
+          alertType: "THREAT_INTEL",
+          sourceModule: "URL_SCANNER",
+          recommendedAction: "Block URL in firewall, investigate associated infrastructure, check for user exposure",
+          isRead: false,
+        });
+      }
+
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/url/batch-scan", async (req, res) => {
+    try {
+      const { urls } = req.body;
+      if (!Array.isArray(urls) || urls.length === 0 || urls.length > 50) {
+        return res.status(400).json({ message: "Provide 1-50 URLs to scan" });
+      }
+      const results = await batchScanUrls(urls);
+      res.json({ results, scanned: results.length, threats: results.filter((r) => r.riskLevel !== "SAFE" && r.riskLevel !== "LOW").length });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/url/stats", async (_req, res) => {
+    try {
+      const stats = await getUrlScannerStats();
+      res.json(stats);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/url/top-threats", async (_req, res) => {
+    try {
+      const limit = 25;
+      const topDomains = await getTopThreatenedDomains(limit);
+      res.json(topDomains);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/url/search", async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      if (!query || query.length < 2) {
+        return res.status(400).json({ message: "Search query must be at least 2 characters" });
+      }
+      const results = await searchMaliciousUrls(query, 30);
+      res.json(results);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

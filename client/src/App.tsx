@@ -17,6 +17,7 @@ import ThreatMap from "./pages/threat-map";
 import AttackMatrix from "./pages/attack-matrix";
 import Topology from "./pages/topology";
 import Terminal from "./pages/terminal";
+import UrlScanner from "./pages/url-scanner";
 
 function Router() {
   return (
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/attack-matrix" component={AttackMatrix}/>
       <Route path="/topology" component={Topology}/>
       <Route path="/terminal" component={Terminal}/>
+      <Route path="/url-scanner" component={UrlScanner}/>
       <Route component={NotFound} />
     </Switch>
   );
