@@ -6,7 +6,6 @@
 
 @layer base {
   :root {
-    /* Base Colors - Forced Dark Mode / Tactical Theme */
     --background: 220 50% 4%;
     --foreground: 190 80% 90%;
     
@@ -38,7 +37,7 @@
     --input: 220 30% 12%;
     --ring: 190 100% 50%;
     
-    --radius: 0.125rem; /* Sharp corners for tactical look */
+    --radius: 0.125rem;
 
     --font-sans: 'Rajdhani', sans-serif;
     --font-mono: 'Space Mono', monospace;
@@ -46,7 +45,6 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased overflow-x-hidden;
-    /* Tactical Grid Overlay */
     background-image: 
       linear-gradient(to right, rgba(0, 255, 255, 0.03) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
@@ -94,6 +92,43 @@
     opacity: 0.1;
     animation: scanline 8s linear infinite;
   }
+
+  .threat-pulse {
+    animation: threat-pulse 2s ease-in-out infinite;
+  }
+
+  .radar-sweep {
+    animation: radar-sweep 4s linear infinite;
+  }
+
+  .cursor-blink {
+    animation: cursor-blink 1s step-end infinite;
+  }
+
+  .node-glow {
+    filter: drop-shadow(0 0 6px rgba(0, 255, 255, 0.6));
+  }
+
+  .node-glow-red {
+    filter: drop-shadow(0 0 6px rgba(255, 50, 50, 0.6));
+  }
+
+  .node-glow-orange {
+    filter: drop-shadow(0 0 6px rgba(255, 165, 0, 0.6));
+  }
+
+  .arc-dash {
+    animation: arc-dash 2s linear infinite;
+  }
+
+  .matrix-cell-hover {
+    transition: all 0.15s ease;
+  }
+
+  .matrix-cell-hover:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(0, 255, 255, 0.3);
+  }
 }
 
 @keyframes scanline {
@@ -120,7 +155,36 @@
   animation: pulse-border 2s infinite;
 }
 
-/* Custom scrollbar for terminal feel */
+@keyframes threat-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.6); opacity: 0.3; }
+}
+
+@keyframes radar-sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes arc-dash {
+  0% { stroke-dashoffset: 20; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes map-grid-pulse {
+  0%, 100% { opacity: 0.03; }
+  50% { opacity: 0.08; }
+}
+
+@keyframes node-orbit {
+  0% { transform: rotate(0deg) translateX(3px) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(3px) rotate(-360deg); }
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

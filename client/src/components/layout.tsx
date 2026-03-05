@@ -7,6 +7,10 @@ import {
   Fingerprint, 
   FileTerminal,
   Globe,
+  Map,
+  Grid3X3,
+  Network,
+  Terminal,
   Menu,
   X
 } from "lucide-react";
@@ -17,10 +21,14 @@ const navItems = [
   { href: "/", label: "COMMAND CENTER", icon: Activity },
   { href: "/threats", label: "THREAT INTEL", icon: Crosshair },
   { href: "/external-intel", label: "EXTERNAL INTEL", icon: Globe },
+  { href: "/threat-map", label: "THREAT MAP", icon: Map },
+  { href: "/attack-matrix", label: "ATT&CK MATRIX", icon: Grid3X3 },
+  { href: "/topology", label: "TOPOLOGY", icon: Network },
   { href: "/deception", label: "DECEPTION GRID", icon: Eye },
   { href: "/deepfake", label: "MEDIA FORENSICS", icon: Fingerprint },
   { href: "/risk", label: "RISK POSTURE", icon: ShieldAlert },
   { href: "/audit", label: "SYSTEM LOGS", icon: FileTerminal },
+  { href: "/terminal", label: "OPERATOR CMD", icon: Terminal },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -42,7 +50,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
           return (
@@ -50,8 +58,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
               key={item.href} 
               href={item.href}
               className={`
-                flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-200
-                group cursor-pointer font-mono text-sm uppercase tracking-wider
+                flex items-center gap-3 px-4 py-2.5 rounded-sm transition-all duration-200
+                group cursor-pointer font-mono text-xs uppercase tracking-wider
                 ${isActive 
                   ? "bg-primary/10 text-primary border-l-2 border-primary shadow-[inset_10px_0_20px_rgba(0,255,255,0.05)]" 
                   : "text-muted-foreground hover:bg-white/5 hover:text-foreground border-l-2 border-transparent"
@@ -59,8 +67,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
               `}
               onClick={() => setMobileOpen(false)}
             >
-              <item.icon className={`w-5 h-5 ${isActive ? "text-primary drop-shadow-[0_0_5px_rgba(0,255,255,0.5)]" : "opacity-70 group-hover:opacity-100"}`} />
-              <span className="mt-1">{item.label}</span>
+              <item.icon className={`w-4 h-4 ${isActive ? "text-primary drop-shadow-[0_0_5px_rgba(0,255,255,0.5)]" : "opacity-70 group-hover:opacity-100"}`} />
+              <span className="mt-0.5">{item.label}</span>
               {isActive && (
                 <motion.div 
                   layoutId="activeNav" 
@@ -91,12 +99,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen bg-background overflow-hidden relative">
       <div className="scanline"></div>
 
-      {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-72 flex-col bg-card/80 backdrop-blur-xl border-r border-primary/20 z-20">
         <SidebarContent />
       </aside>
 
-      {/* Mobile Header & Sidebar */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-card/90 backdrop-blur-xl border-b border-primary/20 z-50 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <Crosshair className="w-6 h-6 text-primary" />
@@ -126,7 +132,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         )}
       </AnimatePresence>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden z-10 pt-16 md:pt-0">
         <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
           <motion.div

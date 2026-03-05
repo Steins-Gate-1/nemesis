@@ -10,18 +10,23 @@ Dark, cinematic UI with matte black/navy gradients, neon red/cyan highlights, te
 - React + TypeScript + Vite
 - Tailwind CSS with custom dark military theme
 - Shadcn UI components + custom TacticalCard
-- Recharts for data visualization
+- Recharts for data visualization (RadarChart, LineChart, BarChart)
 - Framer Motion for animations
 - wouter for routing
 - TanStack Query for data fetching
 
-### Pages
-- `/` - Dashboard (3-zone Command Center): animated risk meter, 6 stat cards, OSINT scanner, active alerts with status management, intelligence timeline, quick actions
+### Pages (11 total)
+- `/` - Dashboard (3-zone Command Center): animated risk meter, 6 stat cards, OSINT scanner, active alerts with status management, intelligence timeline
 - `/threats` - Threat intelligence with Attack Simulation Engine, stored scenarios, breach/infra/github tabs
+- `/external-intel` - External Intelligence Analyzer with correlation engine, attack probability gauge
+- `/threat-map` - Global Threat Intelligence Map: SVG world map with geo-located threat indicators, pulsing dots, attack arcs, auto-refresh
+- `/attack-matrix` - MITRE ATT&CK Enterprise Matrix: 14-tactic interactive heatmap, technique coverage, radar chart, detail panel
+- `/topology` - Attack Surface Topology Graph: custom force-directed SVG graph, draggable nodes, domain→IP→port→CVE→breach connections
 - `/deception` - Deception & Counter-Intelligence Engine (6 modules)
 - `/deepfake` - Deepfake Warfare Defense Unit (4-tab: Scanner, Exposure Profiles, Scan History, Mitigation)
 - `/risk` - Risk scoring with radar chart, risk evolution line chart, alert frequency bar chart, report generation
 - `/audit` - Audit log timeline with search/filter, hash signature display, expandable JSON, report generation
+- `/terminal` - Operator Command Terminal: military CLI with ASCII art banner, 9 commands, typing animation, command history
 
 ### Backend (server/)
 - Express.js with Helmet security headers and rate limiting
@@ -31,14 +36,29 @@ Dark, cinematic UI with matte black/navy gradients, neon red/cyan highlights, te
 
 ### OSINT Intelligence Engine (server/osint/)
 - `pipeline.ts` - Main `analyzeDomain()` function, orchestrates parallel API calls + attack simulation
-- `hibp.ts` - HaveIBeenPwned API integration (breach detection)
+- `hibp.ts` - HaveIBeenPwned API integration (breach detection, free domain-level + paid email-level)
+- `pwned-passwords.ts` - Pwned Passwords API (k-Anonymity model, free, no key needed)
 - `shodan.ts` - Shodan API integration (infrastructure exposure)
 - `github.ts` - GitHub REST API (secret/leak scanning)
 - `whois.ts` - RDAP/WHOIS domain metadata lookup
+- `cve.ts` - NIST NVD API integration (real CVE lookup with CVSS scores, descriptions, references)
+- `threat-geo.ts` - Geo-located threat data aggregation for the threat map
 - `severity.ts` - Deterministic severity scoring framework + attack risk classifier
 - `utils.ts` - Domain normalization, fetch with timeout/retry
 - `attack-simulator.ts` - Deterministic attack path modeling engine (5 scenario generators)
 - `playbook-generator.ts` - AI-powered tactical playbook generation via OpenAI (lazy-init)
+
+### MITRE ATT&CK Mapper (server/mitre/)
+- `attack.ts` - Maps OSINT findings to MITRE ATT&CK Enterprise framework
+- 14 tactics, ~45 techniques with evidence-based mapping
+- Breach → Initial Access, Credential Access; Infra → Discovery, Lateral Movement; GitHub → Collection; Deepfake → Defense Evasion; Deception → Reconnaissance
+- Returns coverage percentage, active tactics/techniques, highest risk tactic
+
+### AI Threat Briefing Generator (server/briefing/)
+- `generator.ts` - CISO-grade daily intelligence briefings via OpenAI (lazy-init)
+- 7 sections: Executive Summary, Threat Landscape, IOCs, Risk Matrix, MITRE Coverage, Recommended Actions, 72-Hour Outlook
+- Deterministic fallback when OpenAI unavailable
+- Classification: CLASSIFIED // NEMESIS SIGINT
 
 ### Attack Simulation Engine
 - Consumes normalized OSINT AnalysisResult data
@@ -67,6 +87,16 @@ Dark, cinematic UI with matte black/navy gradients, neon red/cyan highlights, te
   5. Correlation Engine - Cross-references triggered tokens, recommends actions
   6. Forensic Logging - Immutable audit trail
 
+### External Intelligence & Correlation Engine
+- `server/correlation/engine.ts` - SOC-grade signal correlation module:
+  - Base weights: Dark Web (LOW=5, MODERATE=15, HIGH=30, CRITICAL=50), Credentials (SAFE=0, MODERATE=10, HIGH=25, CRITICAL=40)
+  - 3 conditional escalation rules: ESC-001 Credential Stuffing (+25), ESC-002 Breach Amplification (+20), ESC-003 Reconnaissance Pattern (+15)
+  - Attack probability: min(combined_score * 1.2, 100)
+  - SOC-grade explainability report generation
+- `POST /api/analyze` - Hybrid: tries ngrok Flask backend first, falls back to real HIBP + Pwned Passwords APIs
+- `POST /api/correlate` - Standalone correlation endpoint
+- Frontend: `/external-intel` page with attack probability gauge, signal decomposition, escalation triggers, explainability report
+
 ### Database Tables
 - `domains` - Tracked domains
 - `emails` - Tracked emails
@@ -76,34 +106,22 @@ Dark, cinematic UI with matte black/navy gradients, neon red/cyan highlights, te
 - `attack_scenarios` - Structured attack scenarios with full kill-chain data
 - `deception_assets` - Honeytokens with token_id, type, placement, status, trigger data
 - `honey_personas` - Synthetic decoy identities
-- `deepfake_scans` - Deepfake detection results (mediaType, syntheticProbability, analysisSummary, riskLevel, detectionTags)
-- `deepfake_exposure_profiles` - Subject exposure assessments (videoMinutes, audioScore, faceVisibility, imageAvailability, exposureScore, exposureLevel)
-- `alerts` - System alerts with lifecycle status (OPEN/ACKNOWLEDGED/UNDER_REVIEW/RESOLVED), alertType, sourceModule, recommendedAction
+- `deepfake_scans` - Deepfake detection results
+- `deepfake_exposure_profiles` - Subject exposure assessments
+- `alerts` - System alerts with lifecycle status
 - `risk_scores` - Computed risk classifications
-- `audit_logs` - Immutable audit trail with SHA-256 hash chaining, actorType, actionType, targetEntity, rawEventData
-- `incident_reports` - Generated reports (4 types) with executive summary, technical details, risk level
-
-### External Intelligence & Correlation Engine
-- `server/correlation/engine.ts` - SOC-grade signal correlation module:
-  - Base weights: Dark Web (LOW=5, MODERATE=15, HIGH=30, CRITICAL=50), Credentials (SAFE=0, MODERATE=10, HIGH=25, CRITICAL=40)
-  - 3 conditional escalation rules: ESC-001 Credential Stuffing (+25), ESC-002 Breach Amplification (+20), ESC-003 Reconnaissance Pattern (+15)
-  - Rule 4: Both CRITICAL → override to CRITICAL
-  - Attack probability: min(combined_score * 1.2, 100)
-  - SOC-grade explainability report generation
-  - Extensible: accepts additional_signals for future modules (port exposure, GitHub secrets, honeytoken triggers)
-- `POST /api/analyze` - Proxies to ngrok Flask backend then runs correlation engine
-  - Calls `/scan` for dark web intelligence and `/password-check` for password exposure
-  - API key stored server-side in NGROK_API_KEY env var (never exposed to frontend)
-  - Creates alerts for HIGH/CRITICAL correlated threats
-  - Graceful degradation when ngrok tunnel is unavailable
-- `POST /api/correlate` - Standalone correlation endpoint (accepts pre-formatted signals)
-- Frontend: `/external-intel` page with attack probability gauge, signal decomposition, escalation triggers, explainability report
+- `audit_logs` - Immutable audit trail with SHA-256 hash chaining
+- `incident_reports` - Generated reports
 
 ### API Routes
 - `POST /api/analyze` - External intelligence + correlation engine analysis
-- `POST /api/correlate` - Standalone correlation engine (dark_web + credentials + additional_signals)
+- `POST /api/correlate` - Standalone correlation engine
 - `POST /api/scans/analyze` - OSINT analysis + attack simulation
 - `POST /api/threats/simulate` - Run full attack simulation
+- `GET /api/cve/:id` - Real CVE lookup from NIST NVD API
+- `GET /api/mitre/matrix` - MITRE ATT&CK coverage mapping
+- `POST /api/briefing/generate` - AI threat intelligence briefing
+- `GET /api/threat-map/data` - Geo-located threat data for map
 - `POST /api/deepfake/scan` - Deepfake media scan pipeline
 - `GET /api/deepfake/stats` - Deepfake statistics
 - `POST /api/deepfake/exposure` - Create exposure profile
@@ -126,19 +144,21 @@ Dark, cinematic UI with matte black/navy gradients, neon red/cyan highlights, te
 - Standard CRUD for alerts, breaches, infra, github, risk, audit
 
 ### Security Hardening
-- Helmet security headers (CSP, XSS, HSTS, etc.)
+- Helmet security headers (CSP disabled for dev, XSS, HSTS, etc.)
 - Express rate limiting: API 100 req/min, webhook 20 req/min
-- JSON payload size limit (10kb)
+- JSON payload size limit (5mb)
+- URL-encoded payload size limit (2mb)
 - Request timeout (30s)
 - Trust proxy enabled
 - All API keys server-side only
 
-### API Keys (Environment Variables)
-- `HIBP_API_KEY` - HaveIBeenPwned API key (optional, degrades gracefully)
-- `SHODAN_API_KEY` - Shodan API key (optional, degrades gracefully)
-- `GITHUB_TOKEN` - GitHub personal access token (optional, degrades gracefully)
-- `AI_INTEGRATIONS_OPENAI_API_KEY` - Provided by Replit AI Integrations
-- `AI_INTEGRATIONS_OPENAI_BASE_URL` - Provided by Replit AI Integrations
+### Real API Integrations
+- **NIST NVD** - Free CVE lookup (no key needed), cached 1hr
+- **HaveIBeenPwned** - Free breach-by-domain API + paid email-level (HIBP_API_KEY optional)
+- **Pwned Passwords** - Free k-Anonymity password check (no key needed)
+- **Shodan** - Infrastructure exposure (SHODAN_API_KEY)
+- **GitHub** - Code leak scanning (GITHUB_TOKEN)
+- **OpenAI** - AI briefings, playbooks, reports (via Replit AI Integrations)
 
 ### Shared Types (shared/)
 - `schema.ts` - Drizzle table definitions + Zod insert schemas + TypeScript types

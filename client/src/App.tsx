@@ -13,6 +13,10 @@ import Deepfake from "./pages/deepfake";
 import Risk from "./pages/risk";
 import Audit from "./pages/audit";
 import ExternalIntel from "./pages/external-intel";
+import ThreatMap from "./pages/threat-map";
+import AttackMatrix from "./pages/attack-matrix";
+import Topology from "./pages/topology";
+import Terminal from "./pages/terminal";
 
 function Router() {
   return (
@@ -24,6 +28,10 @@ function Router() {
       <Route path="/risk" component={Risk}/>
       <Route path="/audit" component={Audit}/>
       <Route path="/external-intel" component={ExternalIntel}/>
+      <Route path="/threat-map" component={ThreatMap}/>
+      <Route path="/attack-matrix" component={AttackMatrix}/>
+      <Route path="/topology" component={Topology}/>
+      <Route path="/terminal" component={Terminal}/>
       <Route component={NotFound} />
     </Switch>
   );

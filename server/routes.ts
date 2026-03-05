@@ -13,6 +13,10 @@ import { generateIncidentReport } from "./reports/generator";
 import { correlate } from "./correlation/engine";
 import { checkPwnedPassword } from "./osint/pwned-passwords";
 import { queryHIBP } from "./osint/hibp";
+import { lookupCVE } from "./osint/cve";
+import { mapToMitre } from "./mitre/attack";
+import { generateThreatBriefing } from "./briefing/generator";
+import { getGeoThreatData } from "./osint/threat-geo";
 
 const startTime = Date.now();
 
@@ -546,6 +550,52 @@ export async function registerRoutes(
         return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
       }
       throw err;
+    }
+  });
+
+  app.get("/api/cve/:id", async (req, res) => {
+    try {
+      const cveId = req.params.id;
+      if (!cveId) return res.status(400).json({ message: "CVE ID required" });
+      const result = await lookupCVE(cveId);
+      if (!result) return res.status(404).json({ message: `CVE ${cveId} not found` });
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/mitre/matrix", async (req, res) => {
+    try {
+      const result = await mapToMitre();
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/briefing/generate", async (req, res) => {
+    try {
+      const { domain } = req.body || {};
+      const briefing = await generateThreatBriefing(domain);
+      await storage.createAuditLog({
+        action: "Threat Briefing Generated",
+        actionType: "REPORT",
+        actorType: "SYSTEM",
+        details: `Threat level: ${briefing.overallThreatLevel}`,
+      });
+      res.json(briefing);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/threat-map/data", async (req, res) => {
+    try {
+      const points = await getGeoThreatData();
+      res.json(points);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
     }
   });
 
